@@ -1,0 +1,9 @@
+# Ignore everything by default.
+*
+
+# Keep the ignore policy itself and the two source directories.
+!.gitignore
+!Core/
+!Core/**
+!libraries/
+!libraries/**
