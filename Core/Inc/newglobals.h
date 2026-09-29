@@ -110,7 +110,7 @@ extern bool intRunning ;
 extern bool lev1Running;
 extern bool currDirectionDB15 ;
 void   modeButtonHandle();
-
+extern bool homeScrenUpdate;
 
 enum homeScreenState{
         dispMode,

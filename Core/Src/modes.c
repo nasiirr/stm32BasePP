@@ -41,9 +41,6 @@ void dispModeHandle(){
             }
       if (menuUpdateMain) {
       drawMenuMain();
-    //   wifi2(wifiEnabled);
-    //  sound1(toneproduce);
-    //   rotation();
       menuUpdateMain = false;
     }
 }
@@ -63,7 +60,8 @@ void modeButtonHandle(){
     pressedWithDebounce( GPIOB , MODE_Pin , &lastState[modeKey],&lastPressTime[modeKey] , &LongPresslastModeKEyPressedTime )){
     modeCounter ++;
     modeUpdate=true;
-    menuUpdateMain=true;
+    homeScrenUpdate = true ;
+
     u8g2_ClearBuffer(&u8g2);
 
     if (modeCounter>5){
@@ -72,7 +70,7 @@ void modeButtonHandle(){
     if(modeCounter==0){
       menuUpdateMain = true ;
       resetMenuStateDisp() ;
-      drawMenuMain();
+      drawMenuMain() ;
       
     }
   }

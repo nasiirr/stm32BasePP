@@ -510,7 +510,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+bool homeScrenUpdate = true ;
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -525,7 +525,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
 
-      drawMenuMain();
+        drawMenuMain();
         drawModeName();
 
   for(;;)
@@ -544,12 +544,12 @@ void StartDefaultTask(void *argument)
       else if (!changeMenu)
       { 
         status();
-        if (menuUpdateMain) {
+        if (homeScrenUpdate) {
           wifi2(wifiEnabled);
           sound1(toneproduce);
           rotation();
           drawModeName();
-          menuUpdateMain = false;
+          homeScrenUpdate = false;
        }
 
         switch (modeCounter) {

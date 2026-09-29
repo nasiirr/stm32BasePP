@@ -53,6 +53,7 @@ void menuButtonHandle() {
       
       modeUpdate=true;
       menuUpdateMain=true;
+      homeScrenUpdate = true ;
     }
     
   }
