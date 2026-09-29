@@ -20,6 +20,7 @@ void dispCycleRunningScreenUpdate();
 //helper functions 
 void Buzzer_Beep();
  void float2s1(float val, char *buf, size_t buflen);
+ void formatScaledValue(uint16_t value10, char *buf, size_t buflen);
 void rpmUpdateButtonsHandle();
 
 struct line
@@ -84,6 +85,20 @@ static inline void bitsSetValue(uint32_t *data, uint8_t index, uint8_t bits, int
   uint32_t mask = (1UL << bits) - 1UL;
   *data = (*data & ~(mask << index)) | ((value & mask) << index);
 }
+
+static inline uint64_t bitGet64(uint64_t data, uint8_t index, uint8_t bits)
+{
+  uint64_t mask = (1ULL << bits) - 1ULL;
+  return (data >> index) & mask;
+}
+
+static inline void bitsSetValue64(uint64_t *data, uint8_t index, uint8_t bits, uint64_t value)
+{
+  uint64_t mask = (1ULL << bits) - 1ULL;
+  *data = (*data & ~(mask << index)) | ((value & mask) << index);
+}
+
+#define bitsSet64(data, index, bits, value) bitsSetValue64(&(data), index, bits, value)
 #define bitsSet(data, index, bits, value) bitsSetValue(&(data), index, bits, value)
 
 // Interface wrappers
@@ -116,4 +131,3 @@ void UITask(void* pvParameters);
 // home screeen functions 
 
 void drawhome();
-

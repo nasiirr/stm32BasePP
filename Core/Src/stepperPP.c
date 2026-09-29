@@ -151,10 +151,10 @@ void _SMPP_setVel(int v){
   _SMPP_OFFHIGH = GPIO_PIN_SET;
   _SMPP_toStepsCounter = -1;
 }
-void _SMPP_setRPM(float rpm){
+void _SMPP_setRPM10(uint16_t rpm10){
   _SMPP_stopFlag = 0;          // a new command always overrides a pending stop
-  if(rpm<.1) _SMPP_setVel((.1/60.0)*_SMPP_SPR);
-  else _SMPP_setVel((rpm/60.0)*_SMPP_SPR);
+  int targetVelocity = ((int)rpm10 * _SMPP_SPR) / 600;
+  _SMPP_setVel(targetVelocity);
 }
 void _SMPP_stop(void){
   if(_SMPP_cur_velocity <= _SMPP_MINVEL){
