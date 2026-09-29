@@ -406,7 +406,7 @@ void menuUpMain() {
     MenuItem *item = &currentMenuMain[selectedMain];
     if (item->type == VALUE_SCALED) {
     uint16_t* var = (uint16_t*)item->value;
-    uint16_t step = 1U;
+    uint16_t step = (*var >= 1000U) ? 10U : 1U;
     if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 100U;
     else if (HAL_GetTick() - lastPressTime[upKey] > 2000) step = 10U;
     *var = (uint16_t)maxInt(item->minValue, (*var + step > item->maxValue) ? item->maxValue : *var + step);
@@ -442,7 +442,7 @@ void menudownMain() {
     MenuItem *item = &currentMenuMain[selectedMain];
     if (item->type == VALUE_SCALED) {
   uint16_t* var = (uint16_t*)item->value;
-  uint16_t step = 1U;
+  uint16_t step = (*var > 1000U) ? 10U : 1U;
   if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100U;
   else if (HAL_GetTick() - lastPressTime[downKey] > 2000) step = 10U;
   *var = (uint16_t)((*var > item->minValue + step) ? *var - step : item->minValue);

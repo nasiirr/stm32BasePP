@@ -150,7 +150,7 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
       if (pressedWithDebounce(GPIOB , UP_Pin, &lastState[upKey], &lastPressTime[upKey] ,&LongPressupLastPressTime))
   {
      modeUpdate = true;
-    uint16_t step = 1U;
+  uint16_t step = (rpm10 >= 1000U) ? 10U : 1U;
   if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 100U;
   else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 10U;
 
@@ -164,7 +164,7 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
 if (pressedWithDebounce(GPIOB, DOWN_Pin, &lastState[downKey], &lastPressTime[downKey] ,&LongPressdownLastPressTime ))
   { 
     modeUpdate = true ;
-    uint16_t step = 1U;
+    uint16_t step = (rpm10 > 1000U) ? 10U : 1U;
   if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100U;
   else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 10U;
 
