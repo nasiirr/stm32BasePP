@@ -7,3 +7,5 @@
 !Core/**
 !libraries/
 !libraries/**
+
+Core/Startup/startup_stm32f103c8tx.s
