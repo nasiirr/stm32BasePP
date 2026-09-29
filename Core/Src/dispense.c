@@ -3,34 +3,34 @@
 #include<newglobals.h>
 #include<globalfunctions.h>
 
-float runTime = 10.0f;
-float pauseTime = 2.0f;
+uint16_t runTime10 = 100U;
+uint16_t pauseTime10 = 20U;
 int dispCycles = 2 ;
-float rpm = 100.0f;
+uint16_t rpm10 = 1000U;
 bool modeUpdate = true;
 // uint8_t modeCounter=0;
 //calculate the dispense time in milliseconds based on the current unit
 int64_t dispRuntime(void)
 {
-    if (currentRunTimeUnit == seconds) return (int64_t)(runTime * 1000.0f);
-    if (currentRunTimeUnit == minutes) return (int64_t)(runTime * 60.0f * 1000.0f);
-    if (currentRunTimeUnit == hours)   return (int64_t)(runTime * 3600.0f * 1000.0f);
-    if (currentRunTimeUnit == days)    return (int64_t)(runTime * 86400.0f * 1000.0f);
+    if (currentRunTimeUnit == seconds) return ((int64_t)runTime10 * 1000) / 10;
+    if (currentRunTimeUnit == minutes) return ((int64_t)runTime10 * 60 * 1000) / 10;
+    if (currentRunTimeUnit == hours)   return ((int64_t)runTime10 * 3600 * 1000) / 10;
+    if (currentRunTimeUnit == days)    return ((int64_t)runTime10 * 86400 * 1000) / 10;
 
-    return (int64_t)(runTime * 1000.0f);
+    return ((int64_t)runTime10 * 1000) / 10;
 }
 //calculate the pause time in milliseconds based on the current unit
 int64_t dispPauseTime(void){
-  if(currentPauseTimeUnit==seconds) return (int64_t) (pauseTime *1000);
-  else if(currentPauseTimeUnit==minutes) return (int64_t) (pauseTime*60*1000);
-  else if(currentPauseTimeUnit==hours) return (int64_t) (pauseTime*3600*1000);
-  else if(currentPauseTimeUnit==days) return (int64_t) (pauseTime*86400*1000);
-  else return (int64_t) (pauseTime *1000);
+  if(currentPauseTimeUnit==seconds) return ((int64_t)pauseTime10 * 1000) / 10;
+  else if(currentPauseTimeUnit==minutes) return ((int64_t)pauseTime10 * 60 * 1000) / 10;
+  else if(currentPauseTimeUnit==hours) return ((int64_t)pauseTime10 * 3600 * 1000) / 10;
+  else if(currentPauseTimeUnit==days) return ((int64_t)pauseTime10 * 86400 * 1000) / 10;
+  else return ((int64_t)pauseTime10 * 1000) / 10;
 }
 //enum to represent the type of value in the dispense menu
 typedef enum{
   VALUE_INT,
-  VALUE_FLOAT
+  VALUE_SCALED
 } ValueType;
 
 //struct to represent a menu item in the dispense menu
@@ -38,19 +38,19 @@ typedef struct {
   const char* name;
   ValueType type;
   void* value;
-  float minValue;
-  float maxValue;
+  uint16_t minValue;
+  uint16_t maxValue;
 } MenuItem;
 
 MenuItem tMenu[] = {
-  { "RT",    VALUE_FLOAT, &runTime,    0.1f, 999.9f },
-  { "PT",    VALUE_FLOAT, &pauseTime,   0.1f, 999.9f },
-  { "Cycle", VALUE_INT,   &dispCycles,  0.0f, 999.0f }
+  { "RT",    VALUE_SCALED, &runTime10,    1U, 9999U },
+  { "PT",    VALUE_SCALED, &pauseTime10,   1U, 9999U },
+  { "Cycle", VALUE_INT,   &dispCycles,  0U, 999U }
 };
 
 MenuItem homeMenu[] = {
-  { "RPM",  VALUE_FLOAT, &rpm,  MIN_RPM, MAX_RPM },
-  { "TIME", VALUE_INT,   NULL, 0.0f, 0.0f }
+  { "RPM",  VALUE_SCALED, &rpm10,  MIN_RPM10, MAX_RPM10 },
+  { "TIME", VALUE_INT,   NULL, 0U, 0U }
 };
 
 
@@ -96,14 +96,15 @@ int64_t nominalElapsedSoFar = 0;
  // global, start paused
 
 
-uint32_t dispenseSettings = 0; 
+uint64_t dispenseSettings = 0;
 bool dispNeedsSave = false;
 void savedispenseSettings() {
   if (!dispNeedsSave) return;
   dispNeedsSave = false;
-  bitsSet(dispenseSettings, 0, 10, runTime);
-  bitsSet(dispenseSettings, 10, 10, pauseTime);
-  bitsSet(dispenseSettings, 20, 10, dispCycles);
+  bitsSet64(dispenseSettings, 0, 14, runTime10);
+  bitsSet64(dispenseSettings, 14, 14, pauseTime10);
+  bitsSet64(dispenseSettings, 28, 13, rpm10);
+  bitsSet64(dispenseSettings, 41, 10, dispCycles);
   // prefs.begin(NVS_NS, false);
   // prefs.putBytes("dispset", &dispenseSettings, sizeof(dispenseSettings));
   // prefs.end();
@@ -165,7 +166,7 @@ void DispCycle(){
     
     currentPumpState = pumpRunningDisp;  
         _SMPP_setDir(clockwise);
-         _SMPP_setRPM(rpm); 
+         _SMPP_setRPM10(rpm10);
 
     
                      
@@ -182,7 +183,7 @@ void DispCycle(){
       while(_SMPP_isStopping())
         osDelay(1);
       _SMPP_setDir(!clockwise);
-      _SMPP_runReverseAngle(reverseAngle,rpm);
+      _SMPP_runReverseAngle(reverseAngle,rpm10 / 10U);
       _SMPP_setDir(clockwise);
     }
            pumpRunning = false ;
@@ -220,7 +221,7 @@ void DispCycle(){
 
         if(reverseAngle > 0){
           _SMPP_setDir(!clockwise);
-          _SMPP_runReverseAngle(reverseAngle,rpm);
+          _SMPP_runReverseAngle(reverseAngle,rpm10 / 10U);
           _SMPP_setDir(clockwise);
           currentPumpState=pumpStoppingDisp;
         }
@@ -263,7 +264,7 @@ else
         pumpRunning = true;
         if(dispCycles!=0) CycleElapsed--;
         PumpRunningTime = HAL_GetTick();
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm10);
         if (dispCycles != 0) {
             nominalElapsedSoFar += dispPauseTime();
             resyncLoadingBar(nominalElapsedSoFar);
@@ -293,11 +294,8 @@ void drawMenuRow(const char* title, MenuItem* item, int y, bool selected, bool e
   bool hasValue = (item->value != NULL);
   char buf[10];
   if (hasValue) {
-    if (item->type == VALUE_FLOAT) {
-      float value = *(float*)item->value;
-
-      float2s1(value, buf, sizeof(buf));
-      // snprintf(buf, sizeof(buf), "%.1f", value);
+    if (item->type == VALUE_SCALED) {
+      formatScaledValue(*(uint16_t*)item->value, buf, sizeof(buf));
     } else {
       int value = *(int*)item->value;
       snprintf(buf, sizeof(buf), "%d", value);
@@ -406,14 +404,12 @@ void menuUpMain() {
   if (isEditingMain) {
     dispNeedsSave = true;
     MenuItem *item = &currentMenuMain[selectedMain];
-    if (item->type == VALUE_FLOAT) {
-    float* var = (float*)item->value;
-
-    float step = 0.1f;
-    if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 10.0f;
-    else if (HAL_GetTick() - lastPressTime[upKey] > 2000) step = 1.0f;
-
-    *var = constrain(*var + step, item->minValue, item->maxValue);
+    if (item->type == VALUE_SCALED) {
+    uint16_t* var = (uint16_t*)item->value;
+    uint16_t step = 1U;
+    if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 100U;
+    else if (HAL_GetTick() - lastPressTime[upKey] > 2000) step = 10U;
+    *var = (uint16_t)maxInt(item->minValue, (*var + step > item->maxValue) ? item->maxValue : *var + step);
   } else {
     int* var = (int*)item->value;
 
@@ -444,13 +440,12 @@ void menudownMain() {
   if (isEditingMain) {
     dispNeedsSave = true;
     MenuItem *item = &currentMenuMain[selectedMain];
-    if (item->type == VALUE_FLOAT) {
-  float* var = (float*)item->value;
-  float step = 0.1f;
-  if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 10.0f;
-  else if (HAL_GetTick() - lastPressTime[downKey] > 2000) step = 1.0f;
-
-  *var = constrain(*var - step, item->minValue, item->maxValue);
+    if (item->type == VALUE_SCALED) {
+  uint16_t* var = (uint16_t*)item->value;
+  uint16_t step = 1U;
+  if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100U;
+  else if (HAL_GetTick() - lastPressTime[downKey] > 2000) step = 10U;
+  *var = (uint16_t)((*var > item->minValue + step) ? *var - step : item->minValue);
 } else {
   int* var = (int*)item->value;
   int step = 1;
@@ -519,9 +514,6 @@ isEditingMain = false; // land back on TIME row
     firstVisibleMain = 0;
   }
 }
-
-
-
 
 
 

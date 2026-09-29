@@ -35,11 +35,11 @@ static const int downKey = 8;  // DOWN
 
 
 //pumpstate 
-#define MAX_RPM 600.0f
-#define MIN_RPM 0.1f
+#define MAX_RPM10 6000U
+#define MIN_RPM10 1U
 extern int maxSpeed;
 extern bool maxSpeedRunning;
-extern float rpm;
+extern uint16_t rpm10;
 extern int rpmext ;
 extern int reverseAngle ;
 
@@ -75,8 +75,8 @@ extern unsigned long LongPresslastModeKEyPressedTime ;
 
 //disp cycle 
 extern bool  dispTimeEdit ;    // true when the dispense time is being edited in the menu
-extern float runTime;
-extern float pauseTime;
+extern uint16_t runTime10;
+extern uint16_t pauseTime10;
 extern int dispCycles;
 extern int CycleElapsed;
 extern bool startelapsedupdate ;
@@ -89,7 +89,7 @@ extern bool isEditingMain;
 extern int selectedMain;
 extern int load ;    //used to store the total load time for the dispense cycle  and pass it to boarder animation function
 
-extern uint32_t dispenseSettings;   // 30 bits for runTime, pauseTime, dispCycles   
+extern uint64_t dispenseSettings;   // scaled RT, PT, RPM and cycles
 
 typedef enum MenuScreen { SCREEN_HOME, SCREEN_TIME } MenuScreen;
 extern MenuScreen  currentScreen ;

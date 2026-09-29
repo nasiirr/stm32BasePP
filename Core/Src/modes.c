@@ -100,7 +100,7 @@ void intModeHandle(){
     intRunning = true ;
     currentPumpState = pumpRunningDisp;  
     _SMPP_setDir(clockwise);
-    _SMPP_setRPM(rpm);              
+    _SMPP_setRPM10(rpm10);
     }
     else{
     pumpRunning =false ;
@@ -145,7 +145,7 @@ void handleDB15Direction() {
 }
 
 // ---- shared: DB15 start/stop pin (used by EXTV, LEV1, LEV2) ----
-void handleDB15StartStop(int rpmToUse) {
+void handleDB15StartStop(uint16_t rpm10ToUse) {
   if (DispenseRunning) {
     return;
   }
@@ -159,7 +159,7 @@ void handleDB15StartStop(int rpmToUse) {
     lev1Running = true;
     currentPumpState = pumpRunningDisp;
     _SMPP_setDir(currDirectionDB15);
-    _SMPP_setRPM(rpmToUse);
+    _SMPP_setRPM10(rpm10ToUse);
   }
   else if (!triggerActive && pumpRunning) {
     pumpRunning = false;
@@ -184,30 +184,28 @@ printf("ADC:%d,RPM:%d\n", adcval, rpmext);
     modeUpdate = true;
   
     if (pumpRunning) {
-      _SMPP_setRPM(rpmext);
+      _SMPP_setRPM10((uint16_t)rpmext * 10U);
        lastExtRpm = rpmext;
     }
   }
   handleDB15Direction();
-  handleDB15StartStop(rpmext);
+  handleDB15StartStop((uint16_t)rpmext * 10U);
 }
 
 // ---- modeCounter == 4 : LEV1 ----
 void handleLev1() {
-  handleDB15StartStop(rpm);
+  handleDB15StartStop(rpm10);
   rpmUpdateButtonsHandle();
 }
 
 // ---- modeCounter == 3 : EXTI ----
 void handleExtI() {
-  handleDB15StartStop(rpm);
+  handleDB15StartStop(rpm10);
 }
 
 // ---- modeCounter == 5 : LEV2 ----
 void handleLev2() {
   handleDB15Direction();
-  handleDB15StartStop(rpm);
+  handleDB15StartStop(rpm10);
     rpmUpdateButtonsHandle();
 }
-
-

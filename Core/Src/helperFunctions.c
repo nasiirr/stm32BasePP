@@ -24,6 +24,14 @@ int rpmext = 0;
     snprintf(buf, buflen, "%s%lu.%lu", neg ? "-" : "",
              (unsigned long)whole, (unsigned long)frac);
 }
+void formatScaledValue(uint16_t value10, char *buf, size_t buflen) {
+    if (value10 >= 1000U) {
+        snprintf(buf, buflen, "%u", (unsigned)(value10 / 10U));
+    } else {
+        snprintf(buf, buflen, "%u.%u", (unsigned)(value10 / 10U),
+                 (unsigned)(value10 % 10U));
+    }
+}
 float constrain(float value, float minValue, float maxValue)
 {
     if (value < minValue)
@@ -105,7 +113,7 @@ void rpmUpdateScreen() {
   if (isExt) {
     snprintf(bufRPM, sizeof(bufRPM), "%d", rpmext);
 } else {
-    float2s1(rpm, bufRPM, sizeof(bufRPM));
+    formatScaledValue(rpm10, bufRPM, sizeof(bufRPM));
 }
 
   const int gap = 1;
@@ -142,28 +150,28 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
       if (pressedWithDebounce(GPIOB , UP_Pin, &lastState[upKey], &lastPressTime[upKey] ,&LongPressupLastPressTime))
   {
      modeUpdate = true;
-    float step = 0.1f;
-  if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 10.0f;
-  else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 1.0f;
+    uint16_t step = 1U;
+  if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 100U;
+  else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 10U;
 
-  rpm = constrain(rpm + step, MIN_RPM, MAX_RPM);
+  rpm10 = (uint16_t)((rpm10 + step > MAX_RPM10) ? MAX_RPM10 : rpm10 + step);
      if (_SMPP_isRunning() && maxSpeedRunning==false)
       {
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm10);
       }
     }
 
 if (pressedWithDebounce(GPIOB, DOWN_Pin, &lastState[downKey], &lastPressTime[downKey] ,&LongPressdownLastPressTime ))
   { 
     modeUpdate = true ;
-    float step = 0.1f;
-  if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 10.0f;
-  else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 1.0f;
+    uint16_t step = 1U;
+  if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100U;
+  else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 10U;
 
-  rpm = constrain(rpm - step, MIN_RPM, MAX_RPM);     
+  rpm10 = (uint16_t)((rpm10 > MIN_RPM10 + step) ? rpm10 - step : MIN_RPM10);
        if (_SMPP_isRunning() && maxSpeedRunning==false)
       {
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm10);
       
     }
 
@@ -210,12 +218,12 @@ void maxSpeedKeyHandle(){
   if(modeCounter!=5 && modeCounter!=4 && modeCounter!=2 && DispenseRunning==false && pressedWithDebounce(GPIOA, MAX_SPEED_Pin,&lastState[maxSpeedKey],&lastPressTime[maxSpeedKey] , NULL) ){
     maxSpeedRunning=!maxSpeedRunning;
     if(maxSpeedRunning){
-      _SMPP_setRPM(maxSpeed);
+      _SMPP_setRPM10((uint16_t)maxSpeed * 10U);
       _SMPP_setDir(clockwise);
     }
     if(!maxSpeedRunning){
       if(intRunning==true  || lev1Running == true){
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm10);
       }
       else _SMPP_stop();
     }
@@ -249,8 +257,8 @@ void RotationBUttonHandle()
       }
     }
     _SMPP_setDir(clockwise);
-    if(maxSpeedRunning==true)_SMPP_setRPM(maxSpeed);
-    if(pumpRunning == true && maxSpeedRunning== false) _SMPP_setRPM(rpm);
+    if(maxSpeedRunning==true)_SMPP_setRPM10((uint16_t)maxSpeed * 10U);
+    if(pumpRunning == true && maxSpeedRunning== false) _SMPP_setRPM10(rpm10);
 
   }
   else{
