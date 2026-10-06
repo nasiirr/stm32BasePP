@@ -143,138 +143,51 @@ void DispCycle(){
       maxSpeedRunning=false;
     }
     else if (DispenseRunning==false)
-    { 
-      //menu state reset 
+    {
       savedispenseSettings();
       u8g2_SetDrawColor(&u8g2, 0);
-
-    u8g2_DrawBox(&u8g2, 65,3,60,22);
-
-    u8g2_SetDrawColor(&u8g2, 1);
-          resetMenuStateDisp();
-          modeUpdate=true;
+      u8g2_DrawBox(&u8g2, 65, 3, 60, 22);
+      u8g2_SetDrawColor(&u8g2, 1);
+      resetMenuStateDisp();
+      modeUpdate = true;
       rpmUpdateScreen();
-   
-     DispenseRunning = true;
-     pumpRunning =true ;
-    CycleElapsed = dispCycles;
-    PumpRunningTime = HAL_GetTick();
-    startelapsedupdate = true;
-     if (dispCycles!=0)  {
-      nominalElapsedSoFar = 0;
-      startLoading(boarderTaskTime());}
-    
-    currentPumpState = pumpRunningDisp;  
-        _SMPP_setDir(clockwise);
-         _SMPP_setRPM10(rpm10);
 
-    
-                     
+      runTicks = (uint32_t)((dispRuntime() + 99) / 100);
+      pauseTicks = (uint32_t)((dispPauseTime() + 99) / 100);
+      if (runTicks == 0U)
+        runTicks = 1U;
+      if (pauseTicks == 0U)
+        pauseTicks = 1U;
+      totalTicks = runTicks * (uint32_t)dispCycles;
+      infiniteCycles = (dispCycles == 0);
+      if (!infiniteCycles)
+      {
+        nominalElapsedSoFar = 0;
+        startLoading(boarderTaskTime());
+      }
+      startReq = true;
+      startelapsedupdate = true;
+      currentPumpState = pumpRunningDisp;
     }
-
-
     else {
-     DispenseRunning = false ;
-     clearLoadingBar();
-     if(!maxSpeedRunning) 
-     _SMPP_stop();
-
-    if(pumpRunning && reverseAngle > 0){
-      while(_SMPP_isStopping())
-        osDelay(1);
-      _SMPP_setDir(!clockwise);
-      _SMPP_runReverseAngle(reverseAngle,rpm10 / 10U);
-      _SMPP_setDir(clockwise);
+      stopReq = true;
+      startelapsedupdate = false;
+      menuUpdateMain = true;
     }
-           pumpRunning = false ;
-
-             unsigned long timeout = HAL_GetTick();
-        while(_SMPP_isRunning()){
-          if(HAL_GetTick()-timeout>1500) {
-            break;
-          } 
-        }
-     
-     startelapsedupdate = false ;
-     menuUpdateMain = true ;
-  
   }
-}
-   if(DispenseRunning==false || maxSpeedRunning==true){
-        // clearLoadingBar();
-    return;
-   }
 
-
-   if (pumpRunning)
-{ 
-    // Pump is running
-    if (HAL_GetTick() - PumpRunningTime >= dispRuntime())
-    {      
-              pumpRunning = false;
-        PauseStartTime = HAL_GetTick();
-        
-        currentPumpState = pumpPausedDisp;  
-      _SMPP_stop();
-        while(_SMPP_isStopping())
-          osDelay(1);
-
-        if(reverseAngle > 0){
-          _SMPP_setDir(!clockwise);
-          _SMPP_runReverseAngle(reverseAngle,rpm10 / 10U);
-          _SMPP_setDir(clockwise);
-          currentPumpState=pumpStoppingDisp;
-        }
-        
-  // when paused
-      if (dispCycles != 0) {
-    nominalElapsedSoFar += dispRuntime();
-    resyncLoadingBar(nominalElapsedSoFar);
-
-        if(CycleElapsed==1){
-            currentPumpState = pumpPausedDisp; 
-    DispenseRunning = false;
-    pumpRunning = false;
-    _SMPP_stop();
-    unsigned long timeout = HAL_GetTick();
-        while(_SMPP_isRunning()){
-          if(HAL_GetTick()-timeout>1500) {
-            break;
-          }
-        }
-    
-     clearLoadingBar();
-     menuUpdateMain = true;
-     startelapsedupdate = false;
-       return;
-        
-     
-    }
-   
-}
-
-}
-}
-else
-{
-    // Pump is paused
-    if (( CycleElapsed > 0 || dispCycles==0) &&
-        HAL_GetTick() - PauseStartTime >= dispPauseTime())
-    {   currentPumpState = pumpRunningDisp; 
-        pumpRunning = true;
-        if(dispCycles!=0) CycleElapsed--;
-        PumpRunningTime = HAL_GetTick();
-        _SMPP_setRPM10(rpm10);
-        if (dispCycles != 0) {
-            nominalElapsedSoFar += dispPauseTime();
-            resyncLoadingBar(nominalElapsedSoFar);
-        }
-                 
-    }
-}
-
-
-osDelay(1);
+  uint8_t events = Disp_TakeEvents();
+  if ((events & DISP_EVT_REVERSE) != 0U)
+  {
+    Disp_CompleteReverse();
+    currentPumpState = pumpStoppingDisp;
+  }
+  if ((events & (DISP_EVT_FINISHED | DISP_EVT_STOPPED)) != 0U)
+  {
+    clearLoadingBar();
+    startelapsedupdate = false;
+    menuUpdateMain = true;
+  }
 }
 
 int getMenuYMain(uint8_t totalItems, uint8_t index) {
@@ -446,7 +359,9 @@ void menudownMain() {
   if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100U;
   else if (HAL_GetTick() - lastPressTime[downKey] > 2000) step = 10U;
   *var = (uint16_t)((*var > item->minValue + step) ? *var - step : item->minValue);
-} else {
+} else 
+
+{
   int* var = (int*)item->value;
   int step = 1;
   if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 10;
@@ -514,9 +429,6 @@ isEditingMain = false; // land back on TIME row
     firstVisibleMain = 0;
   }
 }
-
-
-
 
 
 

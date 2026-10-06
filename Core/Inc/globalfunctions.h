@@ -4,6 +4,10 @@
 #include <math.h>
 #include "newglobals.h"
 
+#define DISP_EVT_REVERSE  0x01U
+#define DISP_EVT_FINISHED 0x02U
+#define DISP_EVT_STOPPED  0x04U
+
 
 // dispense functions
 void dispModeHandle();
@@ -14,6 +18,9 @@ void dispModeHandle();
      void resetMenuStateDisp();
 int64_t dispRuntime(void);
 int64_t dispPauseTime(void);     void DispCycle();
+void Timer100ms_TestOnPeriodElapsed(TIM_HandleTypeDef *htim);
+uint8_t Disp_TakeEvents(void);
+void Disp_CompleteReverse(void);
 void dispCycleRunningScreenUpdate();
 
 
@@ -131,3 +138,8 @@ void UITask(void* pvParameters);
 // home screeen functions 
 
 void drawhome();
+
+
+//100ms disp tick 
+
+void Disp_Tick100ms(void);

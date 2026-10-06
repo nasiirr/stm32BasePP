@@ -78,6 +78,12 @@ extern bool  dispTimeEdit ;    // true when the dispense time is being edited in
 extern uint16_t runTime10;
 extern uint16_t pauseTime10;
 extern int dispCycles;
+extern volatile bool startReq;
+extern volatile bool stopReq;
+extern uint32_t runTicks;
+extern uint32_t pauseTicks;
+extern uint32_t totalTicks;
+extern bool infiniteCycles;
 extern int CycleElapsed;
 extern bool startelapsedupdate ;
 extern float timeElapsedSeconds ;

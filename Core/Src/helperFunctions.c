@@ -192,23 +192,6 @@ modeUpdate = false;
 int buzzerOffTime=0;
 unsigned long longPressTimer =0;
 
-//partial display updates
-// void updateDisplayAreaPixel(int x, int y, int w, int h)
-// {
-//     // Convert pixel rectangle to 8x8 tile rectangle
-//     int tx = x / 8;
-//     int ty = y / 8;
-
-//     int tx2 = (x + w - 1) / 8;
-//     int ty2 = (y + h - 1) / 8;
-
-//     int tw = tx2 - tx + 1;
-//     int th = ty2 - ty + 1;
-
-//     u8g2_updateDisplayArea(tx, ty, tw, th);
-// }
-
-
 
 bool maxSpeedRunning = false;
 bool lastmaxSpeedKeyState =  true;
@@ -278,32 +261,6 @@ int boarderTaskTime(){
   }
    return load ;
 }
-
-
-
-
-// void menuButtonHandle() {
- 
-//   if (DispenseRunning==false && maxSpeedRunning==false && pumpRunning == false && pressedWithDebounce(GPIOB , MENU_Pin, &lastState[menuKey], &lastPressTime[menuKey] , NULL)) {
-//     changeMenu = !changeMenu;
-//     // nextLoop = !nextLoop ;
-//     clearLoadingBar();
-
-//     u8g2_ClearBuffer(&u8g2);
-//     if (changeMenu) {
-//       menuUpdate = true;  
-//     }
-//     if(!changeMenu){
-//       if(needsSave){
-//       settingsSave() ;
-//       needsSave = false;
-//       }
-//       modeUpdate=true;
-//       menuUpdateMain=true;
-//     }
-    
-//   }
-// }
 
 
 
