@@ -2,7 +2,9 @@
 *
 
 # Keep the ignore policy itself and the two source directories.
-!.gitignore
+# !.gitignore
+# !.vscode/
+# !.vscode/**
 !Core/
 !Core/**
 !libraries/
