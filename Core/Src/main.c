@@ -142,6 +142,7 @@ int main(void)
   STM32_u8g2_Init(&u8g2);
   HAL_TIM_Base_Start_IT(&htim2);
 HAL_TIM_Base_Start_IT(&htim4);
+HAL_TIM_Base_Start_IT(&htim1);
 _SMPP_setDir(0);
   // STM32_u8g2_DrawTest(&u8g2, GPIO_PIN_RESET, GPIO_PIN_RESET);
 
@@ -368,7 +369,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM1_Init 2 */
-HAL_TIM_Base_Start_IT(&htim1);
+
   /* USER CODE END TIM1_Init 2 */
 
 }
