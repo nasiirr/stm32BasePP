@@ -6,9 +6,11 @@
 #include "stm32f1xx_hal_tim.h"
 
 
-#define DISP_EVT_REVERSE   (1U << 0)
-#define DISP_EVT_FINISHED  (1U << 1)
-#define DISP_EVT_STOPPED   (1U << 2)
+#define DISP_EVT_START     (1U << 0)
+#define DISP_EVT_RUN       (1U << 1)
+#define DISP_EVT_REVERSE   (1U << 2)
+#define DISP_EVT_FINISHED  (1U << 3)
+#define DISP_EVT_STOPPED   (1U << 4)
 
 volatile uint8_t dispEvt = 0;
 typedef enum {

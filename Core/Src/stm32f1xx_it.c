@@ -233,16 +233,34 @@ void TIM4_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 
+// void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+// {
+//   if (htim->Instance == TIM2)
+//   {
+//     _SMPP_stepsGen();
+//   }
+//   else if (htim->Instance == TIM4)
+//   {
+//     _SMPP_accelGen();
+//   }
+// }
+
+extern void Disp_OnTimer100ms(TIM_HandleTypeDef *htim);
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if (htim->Instance == TIM2)
-  {
-    _SMPP_stepsGen();
-  }
-  else if (htim->Instance == TIM4)
-  {
-    _SMPP_accelGen();
-  }
+    if (htim->Instance == TIM1)
+    {
+        Disp_OnTimer100ms(htim);
+    }
+    else if (htim->Instance == TIM2)
+    {
+        _SMPP_stepsGen();
+    }
+    else if (htim->Instance == TIM4)
+    {
+        _SMPP_accelGen();
+    }
 }
 
 /* USER CODE END 1 */
