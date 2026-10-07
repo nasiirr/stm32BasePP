@@ -6,14 +6,15 @@
 
 
 // dispense functions
+void tickDisp();
 void dispModeHandle();
      void menudownMain();
     void  menuUpMain();
      void SelectButtonMain();
      void  BackButtonMain();
      void resetMenuStateDisp();
-int64_t dispRuntime(void);
-int64_t dispPauseTime(void);     void DispCycle();
+int32_t dispRuntime(void);
+int32_t dispPauseTime(void);     void DispCycle();
 void dispCycleRunningScreenUpdate();
 
 

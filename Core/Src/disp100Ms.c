@@ -1,5 +1,6 @@
 #include"main.h"
 #include "newglobals.h"
+#include "globalfunctions.h"
 #include "stepperPP.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_tim.h"
@@ -162,14 +163,7 @@ void DispTick100ms(){
 
 
 void tickDisp(){
-    runTicks = dispRuntime();
-pauseTicks = dispPauseTime();
 
-if (dispCycles > 0)
-    totalTicks = runTicks * dispCycles
-               + pauseTicks * (dispCycles - 1);
-else
-    totalTicks = 0;
 
 
     if (pressedWithDebounce(GPIOB,
@@ -177,13 +171,14 @@ else
                             &lastState[startStop],
                             &lastPressTime[startStop],
                             NULL)) {
+                                
 
         if (!DispenseRunning) {
 
-            savedispenseSettings();
+            // savedispenseSettings();
 
-            runTicks = dispRuntime() / 100;
-            pauseTicks = dispPauseTime() / 100;
+            runTicks = dispRuntime() ;
+            pauseTicks = dispPauseTime() ;
 
             if (dispCycles == 0) {
                 totalTicks = 0;   // infinite mode

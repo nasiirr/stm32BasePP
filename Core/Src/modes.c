@@ -16,7 +16,8 @@ const char* modesarr[] = {
 };
 
 void dispModeHandle(){
-    DispCycle() ;
+    // DispCycle() ;
+    tickDisp();
     
          if(modeCounter==0 && DispenseRunning==false){
         rpmUpdateButtonsHandle();
