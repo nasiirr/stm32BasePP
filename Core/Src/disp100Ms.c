@@ -27,7 +27,7 @@ volatile uint32_t cyclesLeft = 0;
 volatile bool startReq = false ;
 volatile bool stopReq = false ;
 
-uint32_t runticks = 0 ;
+uint32_t runTicks = 0 ;
 uint32_t pauseTicks = 0;
 uint32_t totalTicks = 0;
 
@@ -47,7 +47,7 @@ void Disp_CompleteReverse(void ){
     _SMPP_runReverseAngle(reverseAngle,rpm);
     _SMPP_setDir(clockwise);
 
-    if(dispCycles==0 && cyclesLeft == 1U){
+    if(dispCycles !=0 && cyclesLeft == 1U){
         phase = D_IDLE;
         DispenseRunning = false ;
         dispEvt |= DISP_EVT_FINISHED;
@@ -84,7 +84,7 @@ void DispTick100ms(){
         if (phase  == D_IDLE){
             phase = D_RUN ;
 
-            phaseRemaining = runticks;
+            phaseRemaining = runTicks;
             totalRemaining = totalTicks;
 
             cyclesLeft = dispCycles ;
@@ -124,7 +124,7 @@ void DispTick100ms(){
 
         }
 
-        else if(dispCycles!=0 && cyclesLeft == 1){
+        else if(dispCycles!=0 && cyclesLeft == 1U){
 
             phase = D_IDLE;
             DispenseRunning = false ;
@@ -144,7 +144,7 @@ void DispTick100ms(){
         }
 
         phase = D_RUN;
-        phaseRemaining = runticks;
+        phaseRemaining = runTicks;
 
         pumpRunning = true ;
         PumpRunningTime = HAL_GetTick();
@@ -159,6 +159,50 @@ void DispTick100ms(){
     
    
 }
+
+
+void tickDisp(){
+    runTicks = dispRuntime();
+pauseTicks = dispPauseTime();
+
+if (dispCycles > 0)
+    totalTicks = runTicks * dispCycles
+               + pauseTicks * (dispCycles - 1);
+else
+    totalTicks = 0;
+
+
+    if (pressedWithDebounce(GPIOB,
+                            START_Pin,
+                            &lastState[startStop],
+                            &lastPressTime[startStop],
+                            NULL)) {
+
+        if (!DispenseRunning) {
+
+            savedispenseSettings();
+
+            runTicks = dispRuntime() / 100;
+            pauseTicks = dispPauseTime() / 100;
+
+            if (dispCycles == 0) {
+                totalTicks = 0;   // infinite mode
+            }
+            else {
+                totalTicks =
+                    ((uint64_t)runTicks * dispCycles) +
+                    ((uint64_t)pauseTicks * (dispCycles - 1));
+            }
+
+            startReq = true;
+        }
+        else {
+
+            stopReq = true;
+        }
+    }
+}
+
 
 void Disp_OnTimer100ms(TIM_HandleTypeDef *htim){
     if(htim != NULL && htim->Instance == TIM1) 

@@ -10,22 +10,22 @@ float rpm = 100.0f;
 bool modeUpdate = true;
 // uint8_t modeCounter=0;
 //calculate the dispense time in milliseconds based on the current unit
-int64_t dispRuntime(void)
+int32_t dispRuntime(void)
 {
-    if (currentRunTimeUnit == seconds) return (int64_t)(runTime * 1000.0f);
-    if (currentRunTimeUnit == minutes) return (int64_t)(runTime * 60.0f * 1000.0f);
-    if (currentRunTimeUnit == hours)   return (int64_t)(runTime * 3600.0f * 1000.0f);
-    if (currentRunTimeUnit == days)    return (int64_t)(runTime * 86400.0f * 1000.0f);
+    if (currentRunTimeUnit == seconds) return (int32_t)(runTime * 10.0f);
+    if (currentRunTimeUnit == minutes) return (int32_t)(runTime * 60.0f * 10.0f);
+    if (currentRunTimeUnit == hours)   return (int32_t)(runTime * 3600.0f * 10.0f);
+    if (currentRunTimeUnit == days)    return (int32_t)(runTime * 86400.0f * 10.0f);
 
-    return (int64_t)(runTime * 1000.0f);
+    return (int32_t)(runTime * 10.0f);
 }
 //calculate the pause time in milliseconds based on the current unit
-int64_t dispPauseTime(void){
-  if(currentPauseTimeUnit==seconds) return (int64_t) (pauseTime *1000);
-  else if(currentPauseTimeUnit==minutes) return (int64_t) (pauseTime*60*1000);
-  else if(currentPauseTimeUnit==hours) return (int64_t) (pauseTime*3600*1000);
-  else if(currentPauseTimeUnit==days) return (int64_t) (pauseTime*86400*1000);
-  else return (int64_t) (pauseTime *1000);
+int32_t dispPauseTime(void){
+  if(currentPauseTimeUnit==seconds) return (int32_t) (pauseTime *10);
+  else if(currentPauseTimeUnit==minutes) return (int32_t) (pauseTime*60*10);
+  else if(currentPauseTimeUnit==hours) return (int32_t) (pauseTime*3600*10);
+  else if(currentPauseTimeUnit==days) return (int32_t) (pauseTime*86400*10);
+  else return (int32_t) (pauseTime *10);
 }
 //enum to represent the type of value in the dispense menu
 typedef enum{
