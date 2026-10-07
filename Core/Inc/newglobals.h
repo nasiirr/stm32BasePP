@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "cmsis_os2.h"
 
 #include "STM32_u8g2_hal.h"
 #include <Bitmap.h>
@@ -74,6 +75,8 @@ extern unsigned long LongPresslastModeKEyPressedTime ;
 
 
 //disp cycle 
+extern volatile uint32_t totalRemaining;
+extern volatile uint32_t phaseRemaining;
 extern bool  dispTimeEdit ;    // true when the dispense time is being edited in the menu
 extern float runTime;
 extern float pauseTime;

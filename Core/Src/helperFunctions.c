@@ -1,5 +1,3 @@
-
-
 #include "main.h"
 #include <newglobals.h>
 #include <globalfunctions.h>
@@ -409,72 +407,68 @@ void loadingTask()
   // }
 }
 void dispCycleRunningScreenUpdate(){
+  static uint32_t lastUpdate = 0;
+  char fullStrTime[20];
+  char fullStrCycles[20];
+  uint32_t now = HAL_GetTick();
+  uint32_t elapsedTenths;
+  uint32_t phaseStart;
+  uint32_t whole;
+  uint32_t fraction;
+  const char *unit;
 
-if (HAL_GetTick() - lastdispCycleRunningScreenUpdateTime >= 50 && startelapsedupdate ==true){
-    status();
-    lastdispCycleRunningScreenUpdateTime = HAL_GetTick();
-if (currentPumpState == pumpRunningDisp)
-{
-    int64_t remaining = (int64_t)dispRuntime() - (int64_t)(HAL_GetTick() - PumpRunningTime);
-    timeElapsedSeconds = (remaining < 0) ? 0 : (float)remaining;
-}
-else
-{
-    int64_t remaining = (int64_t)dispPauseTime() - (int64_t)(HAL_GetTick() - PauseStartTime);
-    timeElapsedSeconds = (remaining < 0) ? 0 : (float)remaining;
-}
-   
+  if (!startelapsedupdate || !DispenseRunning) {
+    return;
+  }
 
-    
-  u8g2_SetDrawColor(&u8g2 , 0);
+  if (now - lastUpdate < 100U) {
+    return;
+  }
 
-  u8g2_DrawBox(&u8g2,65,25,59,37);
-  u8g2_DrawBox(&u8g2 , 50,53,15,9);
-  u8g2_SetDrawColor(&u8g2 , 1);
-            
+  if (currentPumpState == pumpPausedDisp) {
+    phaseStart = PauseStartTime;
+  } else if (currentPumpState == pumpRunningDisp) {
+    phaseStart = PumpRunningTime;
+  } else {
+    return;
+  }
 
-u8g2_SetFont(&u8g2, u8g2_font_profont11_tr );
+  elapsedTenths = (now - phaseStart) / 100U;
+  timeElapsedSeconds = (float)elapsedTenths;
 
+  if (elapsedTenths >= 864000U) {
+    whole = elapsedTenths / 864000U;
+    fraction = (elapsedTenths % 864000U) / 86400U;
+    unit = "days";
+  } else if (elapsedTenths >= 36000U) {
+    whole = elapsedTenths / 36000U;
+    fraction = (elapsedTenths % 36000U) / 3600U;
+    unit = "hours";
+  } else if (elapsedTenths >= 600U) {
+    whole = elapsedTenths / 600U;
+    fraction = (elapsedTenths % 600U) / 60U;
+    unit = "mins";
+  } else {
+    whole = elapsedTenths / 10U;
+    fraction = elapsedTenths % 10U;
+    unit = "secs";
+  }
 
+  snprintf(fullStrTime, sizeof(fullStrTime), "%lu.%lu %s",
+           (unsigned long)whole, (unsigned long)fraction, unit);
+  snprintf(fullStrCycles, sizeof(fullStrCycles), "%d cycles", CycleElapsed);
 
-// --- cycles line ---
-char bufferValueCycles[10];
-char fullStrTime[16];
-char bufferValueTime[10];
-float displayTime = timeElapsedSeconds;
-if (displayTime > 3596400000) {
-  displayTime = displayTime / 86400000;
-  float2s1(displayTime, bufferValueTime, sizeof(bufferValueTime));
-    snprintf(fullStrTime, sizeof(fullStrTime), "%s days", bufferValueTime);
-}
-else if (displayTime > 59940000) {
-  displayTime = displayTime / 3600000;
-  float2s1(displayTime, bufferValueTime, sizeof(bufferValueTime));
-    snprintf(fullStrTime, sizeof(fullStrTime), "%s hours", bufferValueTime);
-}
-else if (displayTime > 999000) {
-  displayTime = displayTime / 60000;
-  float2s1(displayTime, bufferValueTime, sizeof(bufferValueTime));
-    snprintf(fullStrTime, sizeof(fullStrTime), "%s mins", bufferValueTime);
-}
-else {
-  displayTime = displayTime / 1000;
-  float2s1(displayTime, bufferValueTime, sizeof(bufferValueTime));
-    snprintf(fullStrTime, sizeof(fullStrTime), "%s secs", bufferValueTime);
-}
+  u8g2_SetDrawColor(&u8g2, 0);
+  u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
+  u8g2_SetDrawColor(&u8g2, 1);
+  u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
 
-int titleXEditTime = 122 - u8g2_GetStrWidth(&u8g2 , fullStrTime);
-u8g2_DrawStr(&u8g2 , titleXEditTime, 42, fullStrTime);
-snprintf(bufferValueCycles, sizeof(bufferValueCycles), "%d", CycleElapsed);  // int → %d, no dtostrf needed
-char fullStrCycles[16];
-snprintf(fullStrCycles, sizeof(fullStrCycles), "%s cycles", bufferValueCycles);
-int titleXEditCycles = 122 - u8g2_GetStrWidth(&u8g2, fullStrCycles);
-u8g2_DrawStr(&u8g2 , titleXEditCycles, 55, fullStrCycles);
-       
-u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
-}
+  u8g2_DrawStr(&u8g2, 122 - u8g2_GetStrWidth(&u8g2, fullStrTime), 42,
+               fullStrTime);
+  u8g2_DrawStr(&u8g2, 122 - u8g2_GetStrWidth(&u8g2, fullStrCycles), 55,
+               fullStrCycles);
 
-
+  lastUpdate = now;
 }
 // void dispCycleRunningScreenUpdate(){
 //     if (HAL_GetTick() - lastdispCycleRunningScreenUpdateTime < 50 || !startelapsedupdate) return;
