@@ -11,16 +11,16 @@ int rpmext = 0;
 // }; 
 // Converts a float to "X.XX" with proper rounding, no dtoa/mprec needed.
 // 1-decimal float-to-string, no dtoa/mprec/double needed
- void float2s1(float val, char *buf, size_t buflen) {
-    int neg = val < 0.0f;
-    if (neg) val = -val;
-
-    uint32_t scaled = (uint32_t)(val * 10.0f + 0.5f);   // round to 1 dp
-    uint32_t whole   = scaled / 10u;
-    uint32_t frac    = scaled % 10u;
-
-    snprintf(buf, buflen, "%s%lu.%lu", neg ? "-" : "",
-             (unsigned long)whole, (unsigned long)frac);
+ void float2s1(uint16_t val, char *buf, size_t buflen) {
+if (val < 1000) {
+    // Below 100 RPM: one decimal place
+    snprintf(buf, buflen, "%u.%u",
+             val / 10u, val % 10u);
+} else {
+    // 100 RPM and above: integer
+    snprintf(buf, buflen, "%u",
+             val / 10u);
+}
 }
 float constrain(float value, float minValue, float maxValue)
 {
@@ -32,6 +32,8 @@ float constrain(float value, float minValue, float maxValue)
 
     return value;
 }
+
+
 void menuButtonHandle() {
   
   if (DispenseRunning==false && maxSpeedRunning==false && pumpRunning == false && pressedWithDebounce(GPIOB, MENU_Pin, &lastState[menuKey], &lastPressTime[menuKey], NULL)  ) {
@@ -100,10 +102,10 @@ void rpmUpdateScreen() {
   char bufRPM[12];
   bool isExt = (modeCounter == 2);
 
-  if (isExt) {
-    snprintf(bufRPM, sizeof(bufRPM), "%d", rpmext);
-} else {
+  if (!isExt) {
     float2s1(rpm, bufRPM, sizeof(bufRPM));
+} else {
+    float2s1(rpmext, bufRPM, sizeof(bufRPM));
 }
 
   const int gap = 1;
@@ -140,9 +142,9 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
       if (pressedWithDebounce(GPIOB , UP_Pin, &lastState[upKey], &lastPressTime[upKey] ,&LongPressupLastPressTime))
   {
      modeUpdate = true;
-    float step = 0.1f;
-  if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 10.0f;
-  else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 1.0f;
+    uint8_t step = rpmext < 1000 ? 1 : 10;
+  if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 100;
+  else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 10;
 
   rpm = constrain(rpm + step, MIN_RPM, MAX_RPM);
      if (_SMPP_isRunning() && maxSpeedRunning==false)
@@ -154,9 +156,9 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
 if (pressedWithDebounce(GPIOB, DOWN_Pin, &lastState[downKey], &lastPressTime[downKey] ,&LongPressdownLastPressTime ))
   { 
     modeUpdate = true ;
-    float step = 0.1f;
-  if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 10.0f;
-  else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 1.0f;
+    uint8_t step = rpmext < 1000 ? 1 : 10;
+  if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100;
+  else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 10;
 
   rpm = constrain(rpm - step, MIN_RPM, MAX_RPM);     
        if (_SMPP_isRunning() && maxSpeedRunning==false)
@@ -406,70 +408,151 @@ void loadingTask()
   //   nextLoop = true;   
   // }
 }
-void dispCycleRunningScreenUpdate(){
-  static uint32_t lastUpdate = 0;
-  char fullStrTime[20];
-  char fullStrCycles[20];
-  uint32_t now = HAL_GetTick();
-  uint32_t elapsedTenths;
-  uint32_t phaseStart;
-  uint32_t whole;
-  uint32_t fraction;
-  const char *unit;
 
-  if (!startelapsedupdate || !DispenseRunning) {
-    return;
-  }
+void dispCycleRunningScreenUpdate(void)
+{
+    static uint32_t lastUpdateTick = 0;
 
-  if (now - lastUpdate < 100U) {
-    return;
-  }
+    char fullStrTime[20];
+    char fullStrCycles[20];
 
-  if (currentPumpState == pumpPausedDisp) {
-    phaseStart = PauseStartTime;
-  } else if (currentPumpState == pumpRunningDisp) {
-    phaseStart = PumpRunningTime;
-  } else {
-    return;
-  }
+    uint32_t nowTick;
+    uint32_t elapsedTicks;
+    uint32_t whole;
+    uint32_t fraction;
+    const char *unit;
 
-  elapsedTenths = (now - phaseStart) / 100U;
-  timeElapsedSeconds = (float)elapsedTenths;
+    if (!startelapsedupdate || !DispenseRunning)
+        return;
 
-  if (elapsedTenths >= 864000U) {
-    whole = elapsedTenths / 864000U;
-    fraction = (elapsedTenths % 864000U) / 86400U;
-    unit = "days";
-  } else if (elapsedTenths >= 36000U) {
-    whole = elapsedTenths / 36000U;
-    fraction = (elapsedTenths % 36000U) / 3600U;
-    unit = "hours";
-  } else if (elapsedTenths >= 600U) {
-    whole = elapsedTenths / 600U;
-    fraction = (elapsedTenths % 600U) / 60U;
-    unit = "mins";
-  } else {
-    whole = elapsedTenths / 10U;
-    fraction = elapsedTenths % 10U;
-    unit = "secs";
-  }
+    nowTick = logicalTick100ms;
 
-  snprintf(fullStrTime, sizeof(fullStrTime), "%lu.%lu %s",
-           (unsigned long)whole, (unsigned long)fraction, unit);
-  snprintf(fullStrCycles, sizeof(fullStrCycles), "%d cycles", CycleElapsed);
+    if (nowTick == lastUpdateTick)
+        return;
 
-  u8g2_SetDrawColor(&u8g2, 0);
-  u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
-  u8g2_SetDrawColor(&u8g2, 1);
-  u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
+    lastUpdateTick = nowTick;
 
-  u8g2_DrawStr(&u8g2, 122 - u8g2_GetStrWidth(&u8g2, fullStrTime), 42,
-               fullStrTime);
-  u8g2_DrawStr(&u8g2, 122 - u8g2_GetStrWidth(&u8g2, fullStrCycles), 55,
-               fullStrCycles);
+    elapsedTicks = dispenseElapsedTicks;
 
-  lastUpdate = now;
+    if (elapsedTicks >= 864000U)
+    {
+        whole = elapsedTicks / 864000U;
+        fraction = (elapsedTicks % 864000U) / 86400U;
+        unit = "days";
+    }
+    else if (elapsedTicks >= 36000U)
+    {
+        whole = elapsedTicks / 36000U;
+        fraction = (elapsedTicks % 36000U) / 3600U;
+        unit = "hours";
+    }
+    else if (elapsedTicks >= 600U)
+    {
+        whole = elapsedTicks / 600U;
+        fraction = (elapsedTicks % 600U) / 60U;
+        unit = "mins";
+    }
+    else
+    {
+        whole = elapsedTicks / 10U;
+        fraction = elapsedTicks % 10U;
+        unit = "secs";
+    }
+
+    timeElapsedSeconds = (float)elapsedTicks / 10.0f;
+
+    snprintf(fullStrTime,
+             sizeof(fullStrTime),
+             "%lu.%lu %s",
+             (unsigned long)whole,
+             (unsigned long)fraction,
+             unit);
+
+    snprintf(fullStrCycles,
+             sizeof(fullStrCycles),
+             "%d cycles",
+             CycleElapsed);
+
+    u8g2_SetDrawColor(&u8g2, 0);
+    u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
+
+    u8g2_SetDrawColor(&u8g2, 1);
+    u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
+
+    u8g2_DrawStr(&u8g2,
+                 122 - u8g2_GetStrWidth(&u8g2, fullStrTime),
+                 42,
+                 fullStrTime);
+
+    u8g2_DrawStr(&u8g2,
+                 122 - u8g2_GetStrWidth(&u8g2, fullStrCycles),
+                 55,
+                 fullStrCycles);
 }
+// void dispCycleRunningScreenUpdate(){
+//   static uint32_t lastUpdate = 0;
+//   char fullStrTime[20];
+//   char fullStrCycles[20];
+//   uint32_t now = HAL_GetTick();
+//   uint32_t elapsedTenths;
+//   uint32_t phaseStart;
+//   uint32_t whole;
+//   uint32_t fraction;
+//   const char *unit;
+
+//   if (!startelapsedupdate || !DispenseRunning) {
+//     return;
+//   }
+
+//   if (now - lastUpdate < 100U) {
+//     return;
+//   }
+
+//   if (currentPumpState == pumpPausedDisp) {
+//     phaseStart = PauseStartTime;
+//   } else if (currentPumpState == pumpRunningDisp) {
+//     phaseStart = PumpRunningTime;
+//   } else {
+//     return;
+//   }
+
+//   elapsedTenths = (now - phaseStart) / 100U;
+//   timeElapsedSeconds = (float)elapsedTenths;
+
+//   if (elapsedTenths >= 864000U) {
+//     whole = elapsedTenths / 864000U;
+//     fraction = (elapsedTenths % 864000U) / 86400U;
+//     unit = "days";
+//   } else if (elapsedTenths >= 36000U) {
+//     whole = elapsedTenths / 36000U;
+//     fraction = (elapsedTenths % 36000U) / 3600U;
+//     unit = "hours";
+//   } else if (elapsedTenths >= 600U) {
+//     whole = elapsedTenths / 600U;
+//     fraction = (elapsedTenths % 600U) / 60U;
+//     unit = "mins";
+//   } else {
+//     whole = elapsedTenths / 10U;
+//     fraction = elapsedTenths % 10U;
+//     unit = "secs";
+//   }
+
+//   snprintf(fullStrTime, sizeof(fullStrTime), "%lu.%lu %s",
+//            (unsigned long)whole, (unsigned long)fraction, unit);
+//   snprintf(fullStrCycles, sizeof(fullStrCycles), "%d cycles", CycleElapsed);
+
+//   u8g2_SetDrawColor(&u8g2, 0);
+//   u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
+//   u8g2_SetDrawColor(&u8g2, 1);
+//   u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
+
+//   u8g2_DrawStr(&u8g2, 122 - u8g2_GetStrWidth(&u8g2, fullStrTime), 42,
+//                fullStrTime);
+//   u8g2_DrawStr(&u8g2, 122 - u8g2_GetStrWidth(&u8g2, fullStrCycles), 55,
+//                fullStrCycles);
+
+//   lastUpdate = now;
+// }
 // void dispCycleRunningScreenUpdate(){
 //     if (HAL_GetTick() - lastdispCycleRunningScreenUpdateTime < 50 || !startelapsedupdate) return;
 

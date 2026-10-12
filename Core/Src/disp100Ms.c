@@ -16,9 +16,10 @@ volatile uint8_t dispEvt = 0;
 typedef enum {
     D_IDLE,
     D_RUN,
+    D_WAIT_STOP,
     D_PAUSE,
     D_REVERSING
-} DispPhase ;
+} DispPhase;
 
 volatile DispPhase phase = D_IDLE ;
 
@@ -29,6 +30,8 @@ volatile uint32_t cyclesLeft = 0;
 
 volatile bool startReq = false ;
 volatile bool stopReq = false ;
+volatile uint32_t logicalTick100ms = 0;
+volatile uint32_t dispenseElapsedTicks = 0;
 
 uint32_t runTicks = 0 ;
 uint32_t pauseTicks = 0;
@@ -55,7 +58,8 @@ void Disp_CompleteReverse(void ){
     else {
         phase = D_PAUSE ;
         phaseRemaining = pauseTicks ;
-        PauseStartTime = HAL_GetTick();
+        dispenseElapsedTicks = 0;
+        // PauseStartTime = HAL_GetTick();
         currentPumpState = pumpPausedDisp;
     }
 }
@@ -63,6 +67,17 @@ void Disp_CompleteReverse(void ){
 
 
 void DispTick100ms(){
+   if (phase == D_WAIT_STOP) {
+    if (_SMPP_isStopping()) {
+        return;
+    }
+
+    phase = D_PAUSE;
+    phaseRemaining = pauseTicks;
+    dispenseElapsedTicks = 0;
+    currentPumpState = pumpPausedDisp;
+    return;
+}
     if(stopReq){
         stopReq = false ;
 
@@ -86,6 +101,7 @@ void DispTick100ms(){
             phase = D_RUN ;
 
             phaseRemaining = runTicks;
+            dispenseElapsedTicks = 0;
             totalRemaining = totalTicks;
 
             cyclesLeft = dispCycles ;
@@ -93,7 +109,7 @@ void DispTick100ms(){
             pumpRunning = true ;
             DispenseRunning = true ;
             CycleElapsed = dispCycles;
-            PumpRunningTime = HAL_GetTick();
+            // PumpRunningTime = HAL_GetTick();
             currentPumpState = pumpRunningDisp;
             startelapsedupdate = true;
 
@@ -112,54 +128,50 @@ void DispTick100ms(){
 
     if (phaseRemaining>0)
     phaseRemaining --;
-
+    dispenseElapsedTicks++;
     if (phase==D_RUN && phaseRemaining == 0)
     {
         pumpRunning = false ;
 
         _SMPP_stop_int();
 
-        if(reverseAngle>0){
-            phase = D_REVERSING;
-
-            dispEvt |= DISP_EVT_REVERSE;
-
-        }
-
-        else if(dispCycles!=0 && cyclesLeft == 1U){
-
-            phase = D_IDLE;
-            DispenseRunning = false ;
-            dispEvt |= DISP_EVT_FINISHED ;
-        }
-
-        else {
-            phase = D_PAUSE ;
-            phaseRemaining = pauseTicks;
-            PauseStartTime = HAL_GetTick();
-            currentPumpState = pumpPausedDisp;
-        }
+        if (reverseAngle > 0) {
+    phase = D_REVERSING;
+    dispenseElapsedTicks = 0;
+    dispEvt |= DISP_EVT_REVERSE;
+}
+else if (dispCycles != 0 && cyclesLeft == 1U) {
+    phase = D_IDLE;
+    DispenseRunning = false;
+    dispEvt |= DISP_EVT_FINISHED;
+}
+else {
+    phase = D_WAIT_STOP;
+    dispenseElapsedTicks = 0;
+    currentPumpState = pumpStoppingDisp;
+}
     }
     
 
-    else if (phase == D_PAUSE && phaseRemaining == 0) {
-        if(dispCycles!=0){
-            cyclesLeft--;
-        }
-
-        phase = D_RUN;
-        phaseRemaining = runTicks;
-
-        pumpRunning = true ;
-        PumpRunningTime = HAL_GetTick();
-        if (dispCycles!=0){
-            CycleElapsed--;
-        }
-
-        _SMPP_setDir(clockwise);
-        _SMPP_setRPM(rpm);
-    
+    if (phase == D_PAUSE && phaseRemaining == 0) {
+    if (_SMPP_isStopping()) {
+        return;
     }
+
+    if (dispCycles != 0) {
+        cyclesLeft--;
+        CycleElapsed--;
+    }
+
+    phase = D_RUN;
+    phaseRemaining = runTicks;
+    dispenseElapsedTicks = 0;
+    pumpRunning = true;
+    currentPumpState = pumpRunningDisp;
+
+    _SMPP_setDir(clockwise);
+    _SMPP_setRPM(rpm);
+}
     
    
 }
@@ -194,7 +206,8 @@ void tickDisp()
         else
         {
             stopReq = true;
-         startelapsedupdate = false;
+            dispenseElapsedTicks = 0;
+            startelapsedupdate = false;
 
         }
     }
@@ -291,6 +304,7 @@ void tickDisp()
 
         clearLoadingBar();
 
+        dispenseElapsedTicks = 0;
         startelapsedupdate = false;
 
         menuUpdateMain = true;
@@ -308,6 +322,7 @@ void tickDisp()
 
         clearLoadingBar();
 
+        dispenseElapsedTicks = 0;
         startelapsedupdate = false;
 
         menuUpdateMain = true;
@@ -315,6 +330,9 @@ void tickDisp()
 }
 
 void Disp_OnTimer100ms(TIM_HandleTypeDef *htim){
-    if(htim != NULL && htim->Instance == TIM1) 
-    DispTick100ms();
+    if(htim != NULL && htim->Instance == TIM1) {
+        DispTick100ms();
+        logicalTick100ms++;
+    }
+
 }

@@ -15,7 +15,7 @@
 //#define _SMPP_STEPPERPIN 26
 //#define _SMPP_DIRECTIONPIN 27
 #define _SMPP_SPR 1600                      // was 12800
-#define _SMPP_MINVEL 20                     // unchanged
+#define _SMPP_MINVEL 3                     // unchanged
 #define _SMPP_MAXVEL ((_SMPP_SPR*1000)/60)  // ≈26667 Hz, was SPR*12
 #define _SMPP_ACCELHZ 20                    // unchanged — matches TIM4 update rate
 #define _SMPP_ACCEL_TIME_S   1U      // startup ramp time from MINVEL to MAXVEL

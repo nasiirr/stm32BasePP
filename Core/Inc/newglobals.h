@@ -36,11 +36,14 @@ static const int downKey = 8;  // DOWN
 
 
 //pumpstate 
+
+#define MIN_RPM10 1 
+#define MAX_RPM10 6000
 #define MAX_RPM 600.0f
 #define MIN_RPM 0.1f
 extern int maxSpeed;
 extern bool maxSpeedRunning;
-extern float rpm;
+extern uint16_t rpm;
 extern int rpmext ;
 extern int reverseAngle ;
 
@@ -75,12 +78,14 @@ extern unsigned long LongPresslastModeKEyPressedTime ;
 
 
 //disp cycle 
+extern volatile uint32_t logicalTick100ms ;
+extern volatile uint32_t dispenseElapsedTicks ;
 extern volatile uint32_t totalRemaining;
 extern volatile uint32_t phaseRemaining;
 extern bool  dispTimeEdit ;    // true when the dispense time is being edited in the menu
-extern float runTime;
-extern float pauseTime;
-extern int dispCycles;
+extern uint16_t runTime;
+extern uint16_t pauseTime;
+extern uint16_t dispCycles;
 extern int CycleElapsed;
 extern bool startelapsedupdate ;
 extern float timeElapsedSeconds ;
@@ -94,7 +99,7 @@ extern int load ;    //used to store the total load time for the dispense cycle 
 
 extern uint32_t dispenseSettings;   // 30 bits for runTime, pauseTime, dispCycles   
 
-typedef enum MenuScreen { SCREEN_HOME, SCREEN_TIME } MenuScreen;
+typedef enum MenuScreen { SCREEN_HOME, SCREEN_PARAMS } MenuScreen;
 extern MenuScreen  currentScreen ;
 
 

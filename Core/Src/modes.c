@@ -12,7 +12,7 @@ uint8_t modeCounter = 0 ;
 bool changeMenu = false;
 bool displayDirty = true;
 const char* modesarr[] = {
-  "DISP ", "INT", "EXTV", "EXTI", "LEV1", "LEV2",
+  "TIME ", "INT", "EXTV", "EXTI", "LEV1", "LEV2",
 };
 
 void dispModeHandle(){
@@ -48,7 +48,7 @@ void dispModeHandle(){
 }
 
 void drawModeName(){
-  if (currentScreen == SCREEN_TIME) return;
+  if (currentScreen == SCREEN_PARAMS) return;
 
   u8g2_SetDrawColor(&u8g2, 0);
   u8g2_DrawBox(&u8g2, 29, 5, 32, 15);

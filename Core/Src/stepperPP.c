@@ -6,6 +6,7 @@
  */
 // #include "tim.h"
 #include "stepperPP.h"
+#include"newglobals.h"
 #include "main.h"   /* HAL_GPIO_WritePin, GPIO_PIN_, STEPPER_ pin macros, GPIOD/GPIOF */
 #include <stdbool.h>
 extern TIM_HandleTypeDef htim2;
@@ -151,6 +152,23 @@ void _SMPP_setVel(int v){
   _SMPP_OFFHIGH = GPIO_PIN_SET;
   _SMPP_toStepsCounter = -1;
 }
+#define RPM_SCALE 10u
+
+void _SMPP_setRPM10(uint16_t rpm10)
+{
+    if (rpm10 < MIN_RPM10) {
+        rpm10 = MIN_RPM10;
+    }
+
+    uint32_t velocity =
+        ((uint32_t)rpm10 * _SMPP_SPR + 300u) / 600u;
+
+    _SMPP_setVel((int)velocity);
+}
+
+
+
+
 void _SMPP_setRPM(float rpm){
   _SMPP_stopFlag = 0;          // a new command always overrides a pending stop
   if(rpm<.1) _SMPP_setVel((.1/60.0)*_SMPP_SPR);
