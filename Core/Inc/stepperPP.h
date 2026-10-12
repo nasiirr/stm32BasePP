@@ -12,6 +12,8 @@
 #ifndef APPLICATION_USER_CORE_STEPPERPP_H_
 #define APPLICATION_USER_CORE_STEPPERPP_H_
 
+#include <stdint.h>
+
 //#define _SMPP_STEPPERPIN 26
 //#define _SMPP_DIRECTIONPIN 27
 #define _SMPP_SPR 1600                      // was 12800
@@ -42,10 +44,10 @@ extern int                   _SMPP_curDirection;
 /* API (defined in stepperPP.c) */
 void _SMPP_stepsGen(void);            /* call from TIM2 update ISR (after setting ARR=_SMPP_cur_Ocr) */
 void _SMPP_accelGen(void);            /* call from TIM4 update ISR @_SMPP_ACCELHZ */
-void _SMPP_runReverseAngle(int ang, int rpmr);
+void _SMPP_runReverseAngle(int ang, uint16_t rpm10);
 void _SMPP_setVel(int v);
-void _SMPP_setRPM(float rpm);
-void _SMPP_setRPMDur(float rpm, unsigned long dur);
+void _SMPP_setRPM10(uint16_t rpm10);
+void _SMPP_setRPMDur10(uint16_t rpm10, unsigned long dur);
 void _SMPP_stop_int(void);
 void _SMPP_stop(void);
 int  _SMPP_isRunning(void);

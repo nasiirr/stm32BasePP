@@ -81,7 +81,7 @@ void _SMPP_accelGen(void){
     _SMPP_stop_int();
   }
 }
-void _SMPP_runReverseAngle(int ang, int rpmr){
+void _SMPP_runReverseAngle(int ang, uint16_t rpm10){
   if(ang <= 0)
     return;
 
@@ -96,8 +96,7 @@ void _SMPP_runReverseAngle(int ang, int rpmr){
 
   _SMPP_to_velocity=_SMPP_MINVEL;_SMPP_cur_velocity=_SMPP_MINVEL;
   ang = (_SMPP_SPR*ang/360);
-  // rpmr *= _SMPP_SPR;
-  int targetVelocity = (rpmr * _SMPP_SPR) / 60;
+  int targetVelocity = (int)(((uint32_t)rpm10 * _SMPP_SPR + 300u) / 600u);
   _SMPP_OFFHIGH = 1;
   _SMPP_cur_velocity1 = _SMPP_ACCEL;
   _SMPP_to_velocity1 = _SMPP_fdaCalc(targetVelocity,_SMPP_ACCEL,ang);
@@ -152,27 +151,11 @@ void _SMPP_setVel(int v){
   _SMPP_OFFHIGH = GPIO_PIN_SET;
   _SMPP_toStepsCounter = -1;
 }
-#define RPM_SCALE 10u
-
-void _SMPP_setRPM10(uint16_t rpm10)
-{
-    if (rpm10 < MIN_RPM10) {
-        rpm10 = MIN_RPM10;
-    }
-
-    uint32_t velocity =
-        ((uint32_t)rpm10 * _SMPP_SPR + 300u) / 600u;
-
-    _SMPP_setVel((int)velocity);
-}
-
-
-
-
-void _SMPP_setRPM(float rpm){
-  _SMPP_stopFlag = 0;          // a new command always overrides a pending stop
-  if(rpm<.1) _SMPP_setVel((.1/60.0)*_SMPP_SPR);
-  else _SMPP_setVel((rpm/60.0)*_SMPP_SPR);
+void _SMPP_setRPM10(uint16_t rpm10){
+  _SMPP_stopFlag = 0;
+  if (rpm10 < MIN_RPM10) rpm10 = MIN_RPM10;
+  if (rpm10 > MAX_RPM10) rpm10 = MAX_RPM10;
+  _SMPP_setVel((int)(((uint32_t)rpm10 * _SMPP_SPR + 300u) / 600u));
 }
 void _SMPP_stop(void){
   if(_SMPP_cur_velocity <= _SMPP_MINVEL){

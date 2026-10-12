@@ -114,7 +114,7 @@ void DispTick100ms(){
             startelapsedupdate = true;
 
             _SMPP_setDir(clockwise);
-            _SMPP_setRPM(rpm);
+            _SMPP_setRPM10(rpm);
         }
         return ;
 
@@ -170,7 +170,7 @@ else {
     currentPumpState = pumpRunningDisp;
 
     _SMPP_setDir(clockwise);
-    _SMPP_setRPM(rpm);
+    _SMPP_setRPM10(rpm);
 }
     
    
@@ -241,7 +241,7 @@ void tickDisp()
         currentPumpState = pumpRunningDisp;
 
         _SMPP_setDir(clockwise);
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm);
 
         if (dispCycles != 0)
         {
@@ -262,7 +262,7 @@ void tickDisp()
         pumpRunning = true;
 
         _SMPP_setDir(clockwise);
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm);
     }
 
 

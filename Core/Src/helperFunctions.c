@@ -22,16 +22,6 @@ if (val < 1000) {
              val / 10u);
 }
 }
-float constrain(float value, float minValue, float maxValue)
-{
-    if (value < minValue)
-        return minValue;
-
-    if (value > maxValue)
-        return maxValue;
-
-    return value;
-}
 
 
 void menuButtonHandle() {
@@ -142,28 +132,28 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
       if (pressedWithDebounce(GPIOB , UP_Pin, &lastState[upKey], &lastPressTime[upKey] ,&LongPressupLastPressTime))
   {
      modeUpdate = true;
-    uint8_t step = rpmext < 1000 ? 1 : 10;
+    uint16_t step = rpm < 1000 ? 1 : 10;
   if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 100;
   else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 10;
 
-  rpm = constrain(rpm + step, MIN_RPM, MAX_RPM);
+  rpm = (uint16_t)constrainInt32(rpm + step, MIN_RPM10, MAX_RPM10);
      if (_SMPP_isRunning() && maxSpeedRunning==false)
       {
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm);
       }
     }
 
 if (pressedWithDebounce(GPIOB, DOWN_Pin, &lastState[downKey], &lastPressTime[downKey] ,&LongPressdownLastPressTime ))
   { 
     modeUpdate = true ;
-    uint8_t step = rpmext < 1000 ? 1 : 10;
+    uint16_t step = rpm <= 1000 ? 1 : 10;
   if (HAL_GetTick() - lastPressTime[downKey] > 8000) step = 100;
   else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 10;
 
-  rpm = constrain(rpm - step, MIN_RPM, MAX_RPM);     
+  rpm = (uint16_t)constrainInt32(rpm - step, MIN_RPM10, MAX_RPM10);
        if (_SMPP_isRunning() && maxSpeedRunning==false)
       {
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm);
       
     }
 
@@ -210,12 +200,12 @@ void maxSpeedKeyHandle(){
   if(modeCounter!=5 && modeCounter!=4 && modeCounter!=2 && DispenseRunning==false && pressedWithDebounce(GPIOA, MAX_SPEED_Pin,&lastState[maxSpeedKey],&lastPressTime[maxSpeedKey] , NULL) ){
     maxSpeedRunning=!maxSpeedRunning;
     if(maxSpeedRunning){
-      _SMPP_setRPM(maxSpeed);
+      _SMPP_setRPM10((uint16_t)maxSpeed);
       _SMPP_setDir(clockwise);
     }
     if(!maxSpeedRunning){
       if(intRunning==true  || lev1Running == true){
-        _SMPP_setRPM(rpm);
+        _SMPP_setRPM10(rpm);
       }
       else _SMPP_stop();
     }
@@ -249,8 +239,8 @@ void RotationBUttonHandle()
       }
     }
     _SMPP_setDir(clockwise);
-    if(maxSpeedRunning==true)_SMPP_setRPM(maxSpeed);
-    if(pumpRunning == true && maxSpeedRunning== false) _SMPP_setRPM(rpm);
+    if(maxSpeedRunning==true)_SMPP_setRPM10((uint16_t)maxSpeed);
+    if(pumpRunning == true && maxSpeedRunning== false) _SMPP_setRPM10(rpm);
 
   }
   else{
@@ -459,7 +449,7 @@ void dispCycleRunningScreenUpdate(void)
         unit = "secs";
     }
 
-    timeElapsedSeconds = (float)elapsedTicks / 10.0f;
+    timeElapsedTenths = elapsedTicks;
 
     snprintf(fullStrTime,
              sizeof(fullStrTime),

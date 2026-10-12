@@ -20,7 +20,7 @@ void dispCycleRunningScreenUpdate();
 
 //helper functions 
 void Buzzer_Beep();
- void float2s1(uint16_t val, char *buf, size_t buflen);
+void float2s1(uint16_t val, char *buf, size_t buflen);
 void rpmUpdateButtonsHandle();
 
 struct line
@@ -111,10 +111,16 @@ void UITask(void* pvParameters);
     void prefsload();
     void settingsSave();
 
-    float constrain(float value, float minValue, float maxValue);
+static inline int32_t constrainInt32(int32_t value,
+                                     int32_t minValue,
+                                     int32_t maxValue)
+{
+  if (value < minValue) return minValue;
+  if (value > maxValue) return maxValue;
+  return value;
+}
 
 
 // home screeen functions 
 
 void drawhome();
-
