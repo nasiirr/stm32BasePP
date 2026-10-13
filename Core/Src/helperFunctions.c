@@ -171,8 +171,7 @@ modeUpdate = false;
 
 
 
-int buzzerOffTime=0;
-unsigned long longPressTimer =0;
+
 
 //partial display updates
 // void updateDisplayAreaPixel(int x, int y, int w, int h)
@@ -306,25 +305,24 @@ BorderLine boarderr[] = {
   { 1, 1, 62, 1 },
 };
 
-const int totalPixels = 373;
-uint64_t loadingTime;
-uint64_t startTime;
-uint64_t nominalTotalLoadTime = 0;  
-// bool nextLoop = false;
+const uint16_t totalPixels = 373;
+uint32_t loadingTime;  /* total job length, 100 ms ticks */
+uint32_t loadStartTick;   /* logicalTick100ms when the job began */
+
 int pixelsDrawn = 0;
 int currLine = 0;
 int xc = 0;
 int yc = 0;
 
 
-void resyncLoadingBar(uint64_t nominalElapsedSoFar)
-{
-  if (nominalTotalLoadTime == 0) return;        // not currently loading
-  uint64_t actualElapsed = HAL_GetTick() - startTime; // real ms since load started
-  int64_t drift = (int64_t)actualElapsed - (int64_t)nominalElapsedSoFar;
-  loadingTime = (long)(nominalTotalLoadTime + drift);
-  if (loadingTime < 1) loadingTime = 1;          // guard divide-by-zero in loadingTask()
-}
+// void resyncLoadingBar(uint64_t nominalElapsedSoFar)
+// {
+//   if (nominalTotalLoadTime == 0) return;        // not currently loading
+//   uint64_t actualElapsed = HAL_GetTick() - startTime; // real ms since load started
+//   int64_t drift = (int64_t)actualElapsed - (int64_t)nominalElapsedSoFar;
+//   loadingTime = (long)(nominalTotalLoadTime + drift);
+//   if (loadingTime < 1) loadingTime = 1;          // guard divide-by-zero in loadingTask()
+// }
 
 void boarder()
 {
@@ -353,39 +351,55 @@ void boarder()
     yc--;
 }
 
-void clearLoadingBar(){
-  xc = boarderr[0].x;
-  yc = boarderr[0].y;
-  u8g2_SetDrawColor(&u8g2 , 0);
-  u8g2_DrawLine( &u8g2 , 1, 1, 126, 1);
-  u8g2_DrawLine( &u8g2 , 126, 1, 126, 62);
-  u8g2_DrawLine( &u8g2 , 126, 62, 1, 62);
-  u8g2_DrawLine( &u8g2 , 1, 62, 1, 0);
-  u8g2_SetDrawColor(&u8g2 , 1);
-}
-
-void startLoading(long time)
+void clearLoadingBar(void)
 {
-clearLoadingBar();
-  loadingTime = time;
-  nominalTotalLoadTime = time;      
-  startTime = HAL_GetTick();
-  pixelsDrawn = 0;
-  // nextLoop = false;
-  currLine = 0;
-  xc = boarderr[currLine].x;
-  yc = boarderr[currLine].y;
+    currLine = 0;
+    xc = boarderr[0].x;
+    yc = boarderr[0].y;
+    pixelsDrawn = 0;
+
+    u8g2_SetDrawColor(&u8g2, 0);
+    u8g2_DrawLine(&u8g2, 1, 1, 126, 1);
+    u8g2_DrawLine(&u8g2, 126, 1, 126, 62);
+    u8g2_DrawLine(&u8g2, 126, 62, 1, 62);
+    u8g2_DrawLine(&u8g2, 1, 62, 1, 1);
+    u8g2_SetDrawColor(&u8g2, 1);
 }
+void startLoading(uint32_t ticks)
+ {
+
+clearLoadingBar();
+  loadingTime   = ticks;
+ loadStartTick = logicalTick100ms;
+   pixelsDrawn = 0;
+
+   currLine = 0;
+}
+// void startLoading(long time)
+// {
+// clearLoadingBar();
+//   loadingTime = time;
+//   nominalTotalLoadTime = time;      
+//   startTime = HAL_GetTick();
+//   pixelsDrawn = 0;
+//   // nextLoop = false;
+//   currLine = 0;
+//   xc = boarderr[currLine].x;
+//   yc = boarderr[currLine].y;
+// }
 
 void loadingTask()
 {
-  if (loadingTime <= 0) return;  // guard divide-by-zero
+if (loadingTime == 0U) return;
 
-  long elapsed_time = HAL_GetTick() - startTime;
-  if (elapsed_time < 0) elapsed_time = 0;          // guard rollover/negative
-  if (elapsed_time > loadingTime) elapsed_time = loadingTime;
+  uint32_t elapsed = logicalTick100ms - loadStartTick;
+  if (elapsed > loadingTime) elapsed = loadingTime;
 
-  int requiredPixels = (int)((uint64_t)elapsed_time * totalPixels / loadingTime);
+  /* 32-bit safe: exact up to ~13 days of ticks, then coarse scaling */
+  uint32_t req = (elapsed <= 0xFFFFFFFFU / (uint32_t)totalPixels)
+               ? (elapsed * (uint32_t)totalPixels) / loadingTime
+               : elapsed / (loadingTime / (uint32_t)totalPixels + 1U);
+  int requiredPixels = (int)req;
 
   while (pixelsDrawn < requiredPixels)
   {

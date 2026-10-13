@@ -43,8 +43,7 @@ void splashScreen() ;
 void clearLoadingBar();
 void RotationBUttonHandle();
 void maxSpeedKeyHandle();
-void startLoading(long time);
-int boarderTaskTime();
+void startLoading(uint32_t ticks);int boarderTaskTime();
 void loadingTask();
 void resyncLoadingBar(uint64_t nominalElapsedSoFar);
 

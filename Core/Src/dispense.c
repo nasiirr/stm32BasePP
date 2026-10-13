@@ -49,7 +49,7 @@ MenuItem tMenu[] = {
 
 MenuItem homeMenu[] = {
   { "RPM",  VALUE_SCALED, &rpm,  MIN_RPM10, MAX_RPM10 },
-  { "PARAMS", VALUE_INT,   NULL, 0, 0 }
+  { "SET", VALUE_INT,   NULL, 0, 0 }
 };
 
 
@@ -370,7 +370,7 @@ void drawMenuMain() {
     u8g2_SetDrawColor(&u8g2, 0);
     u8g2_DrawBox(&u8g2, 29, 5, 32, 15);
     u8g2_SetDrawColor(&u8g2, 1);
-    u8g2_DrawStr(&u8g2, 29, 20, "PARAMS");
+    u8g2_DrawStr(&u8g2, 29, 20, "SET");
   }
 
   for (int i = 0; i < visibleLinesMain; i++) {
@@ -403,7 +403,7 @@ void menuUpMain() {
     if (item->type == VALUE_SCALED) {
     uint16_t* var = (uint16_t*)item->value;
 
-    uint8_t step = *var >= 1000 ? 10 : 1;
+    uint16_t step = *var >= 1000 ? 10 : 1;
     if (HAL_GetTick() - lastPressTime[upKey] > 8000) step = 1000;
     else if (HAL_GetTick() - lastPressTime[upKey] > 2000) step = 100;
 

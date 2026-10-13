@@ -82,8 +82,7 @@ void _SMPP_accelGen(void){
   }
 }
 void _SMPP_runReverseAngle(int ang, uint16_t rpm10){
-  if(ang <= 0)
-    return;
+  if(ang <= 0) return;
 
   uint32_t stopWaitStart = HAL_GetTick();
 
@@ -98,7 +97,7 @@ void _SMPP_runReverseAngle(int ang, uint16_t rpm10){
   ang = (_SMPP_SPR*ang/360);
   int targetVelocity = (int)(((uint32_t)rpm10 * _SMPP_SPR + 300u) / 600u);
   _SMPP_OFFHIGH = 1;
-  _SMPP_cur_velocity1 = _SMPP_ACCEL;
+  _SMPP_cur_velocity1 = _SMPP_MINVEL;
   _SMPP_to_velocity1 = _SMPP_fdaCalc(targetVelocity,_SMPP_ACCEL,ang);
   /* FIX: same period formula as accelGen() — was missing the *2 and the -1,
    * which ran reverse-angle moves at ~2x the intended period (half speed). */

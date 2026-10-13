@@ -115,6 +115,7 @@ void DispTick100ms(){
 
             _SMPP_setDir(clockwise);
             _SMPP_setRPM10(rpm);
+            dispEvt |= DISP_EVT_START;
         }
         return ;
 
@@ -285,8 +286,6 @@ void tickDisp()
 
         _SMPP_runReverseAngle(reverseAngle, rpm);
 
-        _SMPP_setDir(clockwise);
-
         Disp_CompleteReverse();
     }
 
@@ -332,7 +331,7 @@ void tickDisp()
 void Disp_OnTimer100ms(TIM_HandleTypeDef *htim){
     if(htim != NULL && htim->Instance == TIM1) {
         DispTick100ms();
-        logicalTick100ms++;
+        // logicalTick100ms++;
     }
 
 }
