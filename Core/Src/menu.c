@@ -72,7 +72,7 @@ runtimeUnit currentPauseTimeUnit = seconds ;
 //   dispCycles = bitGet(dispenseSettings, 20, 10);
 //   Serial.println(dispenseSettings, BIN);
 
-//   // menu settings 
+//  // menu settings 
 //   currRevAng = bitGet(settingsData, 2, 2);
 //  int  reverseanglearr[4] = {0, 180, 360, 720};
 //   reverseAngle = reverseanglearr[currRevAng];
@@ -160,7 +160,7 @@ typedef struct MenuNode MenuNode;
 struct MenuNode {
   const char* name;
   const char* title;   // short title used when this node becomes a submenu header
-  MenuNode* children;
+  const MenuNode* children;
   uint8_t childCount;
   void (*action)();
   int* value;
@@ -175,7 +175,7 @@ void languHindi() {  needsSave = true; languageHindi = true; currentLanguage = 0
 void languEnglish() {  needsSave = true; languageHindi = false; currentLanguage = 1;
   bitsSet(settingsData, 5, 1, 1);
 }
-MenuNode language[] = {
+const MenuNode language[] = {
   { "HINDI", NULL, NULL, 0, languHindi, NULL, 0, 0 },
   { "ENGLISH", NULL, NULL, 0, languEnglish, NULL, 0, 0 },
 };
@@ -187,7 +187,7 @@ void contrastDark(){ contrastflag = false; currentcontrast=1; needsSave = true;
   bitsSet(settingsData, 1, 1, 0);
     // u8g2.sendF("c", 0x0a6); // Set contrast to dark mode
 } 
-MenuNode contrastMenu[] = {
+const MenuNode contrastMenu[] = {
   { "LIGHT", NULL, NULL, 0, contrastLight, NULL, 0, 0 },
   { "DARK", NULL, NULL, 0, contrastDark, NULL, 0, 0 },
 };
@@ -200,12 +200,12 @@ void toneDisable(){ toneproduce = false;  needsSave = true; currtoneSet = 1;
   bitsSet(settingsData, 0, 1, 0);
 }
 
-MenuNode toneSet[] = {
+const MenuNode toneSet[] = {
   { "ENABLE", NULL, NULL, 0, toneEnable, NULL, 0, 0 },
   { "DISABLE", NULL, NULL, 0, toneDisable, NULL, 1, 0 },
 };
 
-MenuNode generalMenu[] = {
+const MenuNode generalMenu[] = {
   { "TIMESET", NULL, NULL, 0, NULL, &timeSet, 0, 999 },
   { "LANGUAGE", NULL, language, 2, NULL, &currentLanguage, 0, 0 },
   { "CONTRAST", NULL, contrastMenu, 2, NULL, &currentcontrast, 0, 0 },
@@ -222,7 +222,7 @@ void selRTTimeMin(){currentRunTimeUnit = minutes;    currRTUnitSel = 2; needsSav
 void selRTTimeHours(){currentRunTimeUnit = hours;    currRTUnitSel = 1; needsSave = true; bitsSet(settingsData, 17, 2, 1);}
 void selRTTimeDays (){ currentRunTimeUnit = days;    currRTUnitSel = 0; needsSave = true; bitsSet(settingsData, 17, 2, 0);}
 
-MenuNode rtUnitMenu[] = {
+const MenuNode rtUnitMenu[] = {
   { "DAYS", NULL, NULL, 0, selRTTimeDays, NULL, 0, 0 },
   { "HOURS", NULL, NULL, 0, selRTTimeHours, NULL, 1, 0 },
   { "MINUTES", NULL, NULL, 0, selRTTimeMin, NULL, 2, 0 },
@@ -236,7 +236,7 @@ void selPauseTimeMin(){currentPauseTimeUnit = minutes;    currPTUnitSel = 2; nee
 void selPauseTimeHours(){currentPauseTimeUnit = hours;    currPTUnitSel = 1; needsSave = true; bitsSet(settingsData, 19, 2, 1);}
 void selPauseTimeDays (){ currentPauseTimeUnit = days;    currPTUnitSel = 0; needsSave = true; bitsSet(settingsData, 19, 2, 0);}
 
-MenuNode pauseTimeUnitMenu[] = {
+const MenuNode pauseTimeUnitMenu[] = {
   { "DAYS", NULL, NULL, 0, selPauseTimeDays, NULL, 0, 0 },
   { "HOURS", NULL, NULL, 0, selPauseTimeHours, NULL, 1, 0 },
   { "MINUTES", NULL, NULL, 0, selPauseTimeMin, NULL, 2, 0 },
@@ -259,7 +259,7 @@ bitsSet(settingsData, 2, 2, 3);
 
 
 
-MenuNode revAngMenu[] = {
+const MenuNode revAngMenu[] = {
   { "0", NULL, NULL, 0, revAng0, NULL, 0, 0 },
   { "180", NULL, NULL, 0, revAng180, NULL, 1, 0 },
   { "360", NULL, NULL, 0, revAng360, NULL, 2, 0 },
@@ -272,12 +272,12 @@ void tubingAlertEnable(){ needsSave = true; tubingAlertEnabled = true;  currtube
 void tubingAlertDisable(){ needsSave = true; tubingAlertEnabled = false;  currtubeAlert=1; 
   bitsSet(settingsData, 6, 1, 0);}
 
-MenuNode tubeAlertMenu[] = {
+const MenuNode tubeAlertMenu[] = {
   { "YES", NULL, NULL, 0, NULL, NULL, 0, 0 },
   { "NO", NULL, NULL, 0, NULL, NULL, 0, 0 },
 };
 
-MenuNode funtionalMenu[] = {
+const MenuNode funtionalMenu[] = {
   { "RT UNIT", NULL, rtUnitMenu, 4, NULL, &currRTUnitSel, 0, 0 },
   { "PT UNIT", NULL, pauseTimeUnitMenu, 4, NULL, &currPTUnitSel, 0, 0 },
   { "REVERSE ANGLE", "REV ANGLE", revAngMenu, 4 , NULL, &currRevAng, 0, 0 },
@@ -292,7 +292,7 @@ void wifiEnable(){ wifiEnabled = true; currwifiSet=0; needsSave = true;
 void wifiDisable(){ wifiEnabled = false; currwifiSet=1; needsSave = true;
   bitsSet(settingsData, 7, 1, 0);
 }
-MenuNode wifiMenu[] = {
+const MenuNode wifiMenu[] = {
   { "ENABLE", NULL, NULL, 0, wifiEnable, NULL, 0, 0 },
   { "DISABLED", NULL, NULL, 0, wifiDisable, NULL, 0, 0 },
 };
@@ -305,7 +305,7 @@ void wifiResetNo(){ wifiResetFlag = false; currwifiReset=1; needsSave = true;
 }
 
 
-MenuNode wifiResetMenu[] = {
+const MenuNode wifiResetMenu[] = {
   { "YES", NULL, NULL, 0, wifiResetYes, NULL, 0, 0 },
   { "NO", NULL, NULL, 0, wifiResetNo, NULL, 0, 0 },
 };
@@ -319,18 +319,18 @@ void extVolt5(){ currextMenu=1; needsSave = true;
 void extVolt10(){ currextMenu=2; needsSave = true;
   bitsSet(settingsData, 9, 2, 2);
 }
-MenuNode extMenu[] = {
+const MenuNode extMenu[] = {
   { "CURRENT", NULL, NULL, 0, extCurrent, NULL, 0, 0 },
   { "VOLT 0-5V", NULL, NULL, 0, extVolt5, NULL, 0, 0 },
   { "VOLT 0-10V", NULL, NULL, 0, extVolt10, NULL, 0, 0 },
 };
 
-MenuNode softwareMenu[] = {
+const MenuNode softwareMenu[] = {
   { "BOOT V3.1.0", NULL, NULL, 0, wifiReset, NULL, 0, 0 },
   { "USER v3.2.3", NULL, NULL, 0, NULL, NULL, 0, 0 },
 };
 
-MenuNode ExternalMenu[] = {
+const MenuNode ExternalMenu[] = {
   { "WIFI SETTINGS", "WIFI SET", wifiMenu, 2, NULL, &currwifiSet, 0, 0 },
   { "WIFI RST", NULL, wifiResetMenu, 2, NULL, &currwifiReset, 0, 0 },
   { "EXT CONTROLS", "EXT CONT", extMenu, 3, NULL, &currextMenu, 0, 0 },
@@ -351,7 +351,7 @@ void baud38400(){ currentBaudIndex=3; needsSave = true;
   bitsSet(settingsData, 11, 2, 3);
 }
 
-MenuNode baudMenu[] = {
+const MenuNode baudMenu[] = {
   { "4800", NULL, NULL, 0, baud4800, NULL, 0, 0 },
   { "9800", NULL, NULL, 0, baud9800, NULL, 0, 0 },
   { "19200", NULL, NULL, 0, baud19200, NULL, 0, 0 },
@@ -368,7 +368,7 @@ void parityEven(){ currentParityIndex=1; needsSave = true;
 void parityOdd(){ currentParityIndex=2; needsSave = true;
   bitsSet(settingsData, 13, 2, 2);
 }
-MenuNode parityMenu[] = {
+const MenuNode parityMenu[] = {
   { "NONE", NULL, NULL, 0, parityNone, NULL, 0, 0 },
   { "EVEN", NULL, NULL, 0, parityEven, NULL, 0, 0 },
   { "ODD", NULL, NULL, 0, parityOdd, NULL, 0, 0 },
@@ -380,7 +380,7 @@ void stopBit1(){ currentStopBitIndex=0; needsSave = true;
 void stopBit2(){ currentStopBitIndex=1; needsSave = true;
   bitsSet(settingsData, 15, 1, 1);
 }
-MenuNode stopBitMenu[] = {
+const MenuNode stopBitMenu[] = {
   { "1", NULL, NULL, 0, stopBit1, NULL, 0, 0 },
   { "0", NULL, NULL, 0, stopBit2, NULL, 0, 0 },
 };
@@ -392,12 +392,12 @@ void levelTrigLowFunc(){ levelTrigHigh = false; currentLevelTrigIndex=1;  needsS
   bitsSet(settingsData, 16, 1, 0);
 }
 
-MenuNode leveltrigmenu[] = {
+const MenuNode leveltrigmenu[] = {
   { "HIGH", NULL, NULL, 0, levelTrigHighFunc, NULL, 0, 0 },
   { "LOW", NULL, NULL, 0, levelTrigLowFunc, NULL, 0, 0 },
 };
 
-MenuNode systemMenu[] = {
+const MenuNode systemMenu[] = {
   { "BAUD", NULL, baudMenu, 4, NULL, &currentBaudIndex, 0, 0 },
   { "PARITY", NULL, parityMenu, 3, NULL, &currentParityIndex, 0, 0 },
   { "PULSE TRIGGER", "PLS TRIS", NULL, 0, NULL, NULL, 0, 0 },
@@ -409,19 +409,19 @@ MenuNode systemMenu[] = {
   { "STOP BIT", NULL, stopBitMenu, 2, NULL, &currentStopBitIndex, 0, 0 },
 };
 
-MenuNode mainMenu[] = {
+const MenuNode mainMenu[] = {
   { "GENERAL", "GEN", generalMenu, 4, NULL, NULL, 0, 0 },
   { "FUNCTIONAL", "FUNC", funtionalMenu, 6, NULL, NULL, 0, 0 },
   { "SYSTEM", "SYS", systemMenu, 9, NULL, NULL, 0, 0 },
   { "EXTERNAL", "EXT", ExternalMenu, 4, NULL, NULL, 0, 0 },
 };
 
-MenuNode* currentMenu = mainMenu;  // Pointer to the active menu array
+const MenuNode* currentMenu = mainMenu;  // Pointer to the active menu array
 int currentCount = 4;              // How many items in the active array (mainMenu has 4)
 
 enum { MAX_DEPTH = 5 };
 const char* currentTitle = "MENU";
-MenuNode* menuStack[MAX_DEPTH];
+const MenuNode* menuStack[MAX_DEPTH];
 int countStack[MAX_DEPTH];
 int selectedStack[MAX_DEPTH];
 int firstVisibleStack[MAX_DEPTH];
@@ -728,7 +728,7 @@ void SelectButton()
     }
     else
     {
-      MenuNode SelectedItem = currentMenu[selected];
+      const MenuNode SelectedItem = currentMenu[selected];
 
       if (SelectedItem.childCount > 0 && SelectedItem.children != NULL)
       {

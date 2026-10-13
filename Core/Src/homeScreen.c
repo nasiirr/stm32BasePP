@@ -16,7 +16,11 @@ void status()
 
   if (_SMPP_isRunning())
   // if(!DispenseRunning)
-  {    u8g2_DrawTriangle(&u8g2, 50, 38, 60, 45, 50, 52);
+  {   
+  //  u8g2_DrawTriangle(&u8g2, 50, 38, 60, 45, 50, 52);
+
+
+u8g2_DrawXBM(&u8g2, 50, 38, 11, 15, tri_bits);
     // u8g2.updateDisplayArea(50, 38, 15, 15);
   }
   else
