@@ -39,11 +39,11 @@ static const int downKey = 8;  // DOWN
 
 #define MAX_RPM10 6000
 #define MIN_RPM10 1
-extern int maxSpeed;
+extern uint16_t maxSpeed;
 extern bool maxSpeedRunning;
 extern uint16_t rpm;       // RPM multiplied by 10
 extern int rpmext ;
-extern int reverseAngle ;
+extern uint16_t reverseAngle ;
 
 extern bool clockwise ;
 extern bool pumpRunning ;
@@ -137,8 +137,8 @@ typedef enum runtimeUnit{
 extern runtimeUnit currentRunTimeUnit ;
 extern runtimeUnit currentPauseTimeUnit;
 
-extern int currPTUnitSel;
-extern int currRTUnitSel;
+extern uint16_t currPTUnitSel;
+extern uint16_t currRTUnitSel;
 
 
 extern bool levelTrigHigh;

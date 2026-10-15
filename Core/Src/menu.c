@@ -1,6 +1,7 @@
 #include "main.h"
 #include "newglobals.h"
 #include "globalfunctions.h"
+#include <stdint.h>
 #include <stdio.h>
 
 extern u8g2_t u8g2;
@@ -9,16 +10,16 @@ uint32_t settingsData = 0;  // Global variable to hold the packed settings data
 
 
 
-int timeSet = 0;
-int cycles = 0;
-int maxSpeed = 350;
-int pumpNo = 0;
-int accTime=0;
-int decTime = 0;
-int dispStop = 0;
-int selected = 0;
-int firstVisible = 0;
-int parentIndex = 0;
+uint16_t timeSet = 0;
+uint16_t cycles = 0;
+uint16_t maxSpeed = 6000;
+uint16_t pumpNo = 0;
+uint16_t accTime=0;
+uint16_t decTime = 0;
+uint16_t dispStop = 0;
+uint16_t selected = 0;
+uint16_t firstVisible = 0;
+uint16_t parentIndex = 0;
 bool menuUpdate = true;
 const int lineHeight = 12;
 const int visibleLines = 5;
@@ -34,29 +35,29 @@ void factoryReset() {};
 void firmwareInfo() {};
 void aboutInfo() {};
 
-int reverseAngle = 0;
-int currRevAng = 0;
-int currtoneSet = 0;
+uint16_t reverseAngle = 0;
+uint16_t currRevAng = 0;
+uint16_t currtoneSet = 0;
 bool needsSave = false;
 bool contrastflag = true;
-int currentcontrast = 0;
+uint16_t currentcontrast = 0;
 bool languageHindi = false;
-int currentLanguage = 0;
+uint16_t currentLanguage = 0;
 bool tubingAlertEnabled = false;
-int currtubeAlert = 0;
+uint16_t currtubeAlert = 0;
 bool wifiEnabled = false;
-int currwifiSet = 0;
+uint16_t currwifiSet = 0;
 bool wifiResetFlag = false;
-int currwifiReset = 0;
-int currextMenu = 0;
+uint16_t currwifiReset = 0;
+uint16_t currextMenu = 0;
 bool stopBit = false;
-int currentStopBitIndex = 0;
-int currentBaudIndex = 0;
-int currentParityIndex = 0;
+uint16_t currentStopBitIndex = 0;
+uint16_t currentBaudIndex = 0;
+uint16_t currentParityIndex = 0;
 bool levelTrigHigh = false;
-int currentLevelTrigIndex = 0;
-int currPTUnitSel = 0;
-int currRTUnitSel = 0;
+uint16_t currentLevelTrigIndex = 0;
+uint16_t currPTUnitSel = 0;
+uint16_t currRTUnitSel = 0;
 runtimeUnit currentRunTimeUnit = seconds ;
 runtimeUnit currentPauseTimeUnit = seconds ;
 // void prefsload(){
@@ -134,6 +135,7 @@ runtimeUnit currentPauseTimeUnit = seconds ;
 
 // }
 
+
 // void getUnitsFromSettings(runtimeUnit &currentRunTimeUnit) {
 //   switch(currRTUnitSel){
 //     case 0: currentRunTimeUnit = days; break;
@@ -163,9 +165,9 @@ struct MenuNode {
   const MenuNode* children;
   uint8_t childCount;
   void (*action)();
-  int* value;
-  int minValue;
-  int maxValue;
+  uint16_t* value;
+  uint16_t minValue;
+  uint16_t maxValue;
 };
 
 // Functional
@@ -256,7 +258,6 @@ void revAng720(){ reverseAngle = 720;  currRevAng=3;    needsSave = true;
 bitsSet(settingsData, 2, 2, 3);
 
 }
-
 
 
 const MenuNode revAngMenu[] = {
@@ -651,7 +652,7 @@ void menuUp()
     menuUpdate = true;
     if (isEditing)
     {
-      int* var = currentMenu[selected].value;
+      uint16_t* var = currentMenu[selected].value;
       if (*var < currentMenu[selected].maxValue)
       {
         (*var)++;
@@ -689,7 +690,7 @@ void menudown()
 
     if (isEditing)
     {
-      int* var = currentMenu[selected].value;
+      uint16_t* var = currentMenu[selected].value;
 
       // If we are going down, we subtract.
       if (*var > currentMenu[selected].minValue)

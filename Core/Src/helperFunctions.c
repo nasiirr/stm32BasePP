@@ -218,8 +218,7 @@ void lockKeyHandle(){
 
 
 
-bool changeDirPinLastState = true;
-unsigned long lastChangedirPinPressedTime=0;
+
 bool clockwise = true ;
 
 void RotationBUttonHandle()

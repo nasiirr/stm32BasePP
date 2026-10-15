@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include<newglobals.h>
 #include "globalfunctions.h"
+#include "flashStore.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -574,8 +575,8 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-
-        drawMenuMain();
+        loadFlashSettings() ;
+        if(modeCounter == 0) drawMenuMain();
         drawModeName();
 
   for(;;)
@@ -619,6 +620,7 @@ void StartDefaultTask(void *argument)
  
       }
     menuButtonHandle();
+    FlashStorage_ProcessMotorSave();
     u8g2_SendBuffer(&u8g2);
     osDelay(1);
   }

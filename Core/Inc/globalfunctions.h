@@ -73,28 +73,23 @@ static inline int maxInt(int a, int b)
 {
     return (a > b) ? a : b;
 }
-static inline uint32_t bitGet(uint32_t data, uint8_t index, uint8_t bits)
+static inline uint16_t bitGet(uint16_t data, uint8_t index, uint8_t bits)
 {
-  uint32_t mask = (1UL << bits) - 1UL;
+  uint16_t mask = (1UL << bits) - 1UL;
     return (data >> index) & mask;
 }
 
-static inline void bitsSetValue(uint32_t *data, uint8_t index, uint8_t bits, int value)
+static inline void bitsSetValue(uint16_t *data, uint8_t index, uint8_t bits, int value)
 {
-  uint32_t mask = (1UL << bits) - 1UL;
+  uint16_t mask = (1UL << bits) - 1UL;
   *data = (*data & ~(mask << index)) | ((value & mask) << index);
 }
-#define bitsSet(data, index, bits, value) bitsSetValue(&(data), index, bits, value)
+
+#define bitsSet(data, index, bits, value) \
+  bitsSetValue((uint16_t *)&(data), index, bits, value)
 
 // Interface wrappers
-static inline void packFloat(uint32_t *data, uint8_t index, uint8_t bits, float value) {
-  int scaledInteger = (int)roundf(value * 10.0f);
-  bitsSetValue(data, index, bits, scaledInteger);
-}
 
-static inline float unpackFloat(uint32_t data, uint8_t index, uint8_t bits) {
-  return (float)bitGet(data, index, bits) / 10.0f;
-}
 
 
 extern bool needsSave;
@@ -123,3 +118,9 @@ static inline int32_t constrainInt32(int32_t value,
 // home screeen functions 
 
 void drawhome();
+
+
+
+//flash saving and loading functions
+void loadFlashSettings(void) ;
+
