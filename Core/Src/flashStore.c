@@ -18,15 +18,22 @@
 #define MOTOR_META_OFFSET 2U
 
 #define MOTOR_SAVE_DELAY_MS 5000U
+#define MENU_SETTINGS_MAGIC 0x4D53U
+#define MENU_SETTINGS_WORDS 9U
+#define MENU_SAVE_DELAY_MS 5000U
 
 static MotorSettings motorLastObserved;
 static MotorSettings motorLastSaved;
 static uint32_t motorChangedAt;
 static bool motorSaveStateInitialized;
+static MenuSettings menuLastSaved;
+static uint32_t menuChangedAt;
+static bool menuSaveStateInitialized;
 
 void loadFlashSettings(void)
 {
    MotorSettings motorSettings;
+    MenuSettings menuSettings;
 
 
 if (FlashStorage_LoadMotor(&motorSettings))
@@ -42,6 +49,9 @@ else
     modeCounter = 1U;
     clockwise = true;
 }
+
+if (FlashStorage_LoadMenu(&menuSettings))
+    menuSettingsApply(&menuSettings);
 }
 
 
@@ -303,5 +313,90 @@ void FlashStorage_ProcessMotorSave(void)
 
     if (shouldSave && FlashStorage_SaveMotor(&current)) {
         motorLastSaved = current;
+    }
+}
+
+bool FlashStorage_LoadMenu(MenuSettings *settings)
+{
+    const uint16_t *stored = (const uint16_t *)MENU_SETTINGS_PAGE;
+
+    if (settings == NULL || stored[0] != MENU_SETTINGS_MAGIC)
+        return false;
+
+    settings->settings1Bit = stored[1];
+    settings->settings2Bit = stored[2];
+
+    for (uint8_t index = 0; index < 6; index++)
+        settings->settingsInt[index] = stored[index + 3U];
+
+    return true;
+}
+
+bool FlashStorage_SaveMenu(const MenuSettings *settings)
+{
+    FLASH_EraseInitTypeDef erase = {0};
+    uint32_t pageError = 0U;
+    uint16_t words[MENU_SETTINGS_WORDS];
+
+    if (settings == NULL)
+        return false;
+
+    words[0] = MENU_SETTINGS_MAGIC;
+    words[1] = settings->settings1Bit;
+    words[2] = settings->settings2Bit;
+
+    for (uint8_t index = 0; index < 6; index++)
+        words[index + 3U] = settings->settingsInt[index];
+
+    HAL_FLASH_Unlock();
+    erase.TypeErase = FLASH_TYPEERASE_PAGES;
+    erase.PageAddress = MENU_SETTINGS_PAGE;
+    erase.NbPages = 1U;
+
+    if (HAL_FLASHEx_Erase(&erase, &pageError) != HAL_OK) {
+        HAL_FLASH_Lock();
+        return false;
+    }
+
+    for (uint8_t index = 0; index < MENU_SETTINGS_WORDS; index++) {
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
+                              MENU_SETTINGS_PAGE + (index * 2U),
+                              words[index]) != HAL_OK) {
+            HAL_FLASH_Lock();
+            return false;
+        }
+    }
+
+    HAL_FLASH_Lock();
+
+    MenuSettings verify;
+    if (!FlashStorage_LoadMenu(&verify))
+        return false;
+
+    return memcmp(&verify, settings, sizeof(MenuSettings)) == 0;
+}
+
+void FlashStorage_ProcessMenuSave(void)
+{
+    MenuSettings current;
+    uint32_t now = HAL_GetTick();
+
+    menuSettingsCollect(&current);
+
+    if (!menuSaveStateInitialized) {
+        menuLastSaved = current;
+        menuSaveStateInitialized = true;
+        menuChangedAt = now;
+        return;
+    }
+
+    if (memcmp(&current, &menuLastSaved, sizeof(MenuSettings)) != 0) {
+        menuChangedAt = now;
+        menuLastSaved = current;
+    }
+
+    if (needsSave && (uint32_t)(now - menuChangedAt) >= MENU_SAVE_DELAY_MS) {
+        if (FlashStorage_SaveMenu(&current))
+            needsSave = false;
     }
 }

@@ -582,7 +582,7 @@ void StartDefaultTask(void *argument)
   for(;;)
   { Buzzer_Beep();
     if(changeMenu ==true && pumpRunning==false)
-    {
+   {
    SelectButton();
    BackButton();
    menuUp();
@@ -591,6 +591,7 @@ void StartDefaultTask(void *argument)
       drawMenu();
       menuUpdate = false;
     }
+  // menu2Poll();
         }
       else if (!changeMenu)
       { 
@@ -621,6 +622,7 @@ void StartDefaultTask(void *argument)
       }
     menuButtonHandle();
     FlashStorage_ProcessMotorSave();
+    FlashStorage_ProcessMenuSave();
     u8g2_SendBuffer(&u8g2);
     osDelay(1);
   }

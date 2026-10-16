@@ -23,6 +23,13 @@ typedef struct
     uint16_t cycles;
 } DispSettings;
 
+typedef struct
+{
+    uint16_t settings1Bit;
+    uint16_t settings2Bit;
+    uint16_t settingsInt[6];
+} MenuSettings;
+
 bool FlashStorage_Init(void);
 
 bool FlashStorage_LoadMotor(MotorSettings *out);
@@ -32,7 +39,10 @@ void FlashStorage_ProcessMotorSave(void);
 bool FlashStorage_LoadDisp(DispSettings *out);
 bool FlashStorage_SaveDisp(const DispSettings *in);
 
-bool FlashStorage_LoadMenu(uint32_t *settingsData);
-bool FlashStorage_SaveMenu(uint32_t settingsData);
+bool FlashStorage_LoadMenu(MenuSettings *settings);
+bool FlashStorage_SaveMenu(const MenuSettings *settings);
+void FlashStorage_ProcessMenuSave(void);
 
 #endif
+
+

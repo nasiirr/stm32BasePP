@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include "newglobals.h"
+#include "flashStore.h"
 
 
 // dispense functions
@@ -94,7 +95,11 @@ static inline void bitsSetValue(uint16_t *data, uint8_t index, uint8_t bits, int
 
 extern bool needsSave;
 extern bool wifiEnabled ;
-extern uint32_t settingsData;
+extern uint16_t settings1Bit;
+extern uint16_t settings2Bit;
+extern uint16_t settingsInt[6];
+void menuSettingsApply(const MenuSettings *settings);
+void menuSettingsCollect(MenuSettings *settings);
 void drawMenu();
 void UITask(void* pvParameters);
   void SelectButton();
@@ -118,6 +123,7 @@ static inline int32_t constrainInt32(int32_t value,
 // home screeen functions 
 
 void drawhome();
+void menu2Poll();
 
 
 

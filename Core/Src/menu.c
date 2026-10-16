@@ -6,7 +6,196 @@
 
 extern u8g2_t u8g2;
 
-uint32_t settingsData = 0;  // Global variable to hold the packed settings data
+uint16_t settings1Bit = 0;
+uint16_t settings2Bit = 0;
+uint16_t settingsInt[6] = {0};
+
+typedef enum {
+  BOOL_TONE,
+  BOOL_CONTRAST,
+  BOOL_LANGUAGE,
+  BOOL_TUBING_ALERT,
+  BOOL_WIFI,
+  BOOL_WIFI_RESET,
+  BOOL_STOP_BIT,
+  BOOL_LEVEL_TRIGGER
+} BoolField;
+
+
+typedef enum {
+  OPT_RT_UNIT,
+  OPT_PT_UNIT,
+  OPT_REVERSE_ANGLE,
+  OPT_EXT_CONTROL,
+  OPT_BAUD_RATE,
+  OPT_PARITY
+} TwoBitField;
+
+typedef enum {
+  INT_TIME_SET,
+  INT_PUMP_NO,
+  INT_MAX_SPEED,
+  INT_DISP_STOP,
+  INT_ACC_TIME,
+  INT_DEC_TIME
+} IntField;
+
+extern uint16_t timeSet;
+extern uint16_t pumpNo;
+extern uint16_t maxSpeed;
+extern uint16_t accTime;
+extern uint16_t decTime;
+extern uint16_t dispStop;
+extern uint16_t currRevAng;
+extern uint16_t currtoneSet;
+extern bool contrastflag;
+extern uint16_t currentcontrast;
+extern bool languageHindi;
+extern uint16_t currentLanguage;
+extern bool tubingAlertEnabled;
+extern uint16_t currtubeAlert;
+extern bool wifiEnabled;
+extern uint16_t currwifiSet;
+extern bool wifiResetFlag;
+extern uint16_t currwifiReset;
+extern uint16_t currextMenu;
+extern bool stopBit;
+extern uint16_t currentStopBitIndex;
+extern uint16_t currentBaudIndex;
+extern uint16_t currentParityIndex;
+extern bool levelTrigHigh;
+extern uint16_t currentLevelTrigIndex;
+
+static uint16_t getPackedField(uint16_t data, uint8_t width, uint8_t index)
+{
+  return bitGet(data, (uint8_t)(width * index), width);
+}
+
+static void setPackedField(uint16_t *data,
+                           uint8_t width,
+                           uint8_t index,
+                           uint16_t value)
+{
+  bitsSetValue(data, (uint8_t)(width * index), width, value);
+}
+
+static void setIntegerField(uint8_t field, uint16_t value)
+{
+  switch (field) {
+    case INT_TIME_SET:
+      bitsSetValue(&settingsInt[0], 0, 10, value);
+      break;
+    case INT_PUMP_NO:
+      bitsSetValue(&settingsInt[1], 0, 10, value);
+      break;
+    case INT_MAX_SPEED:
+      bitsSetValue(&settingsInt[2], 0, 13, value);
+      break;
+    case INT_DISP_STOP:
+      bitsSetValue(&settingsInt[3], 0, 4, value);
+      break;
+    case INT_ACC_TIME:
+      bitsSetValue(&settingsInt[4], 0, 10, value);
+      break;
+    case INT_DEC_TIME:
+      bitsSetValue(&settingsInt[5], 0, 10, value);
+      break;
+    default:
+      break;
+  }
+}
+
+static const uint16_t integerScale[] = {1, 1, 1, 1, 1, 1};
+
+static uint16_t scaleInteger(uint8_t field, uint16_t value)
+{
+  return (uint16_t)(value * integerScale[field]);
+}
+
+static uint16_t unscaleInteger(uint8_t field, uint16_t value)
+{
+  return (uint16_t)(value / integerScale[field]);
+}
+
+static void packIntegerValue(uint16_t *value)
+{
+  if (value == &timeSet)
+    setIntegerField(INT_TIME_SET, scaleInteger(INT_TIME_SET, *value));
+  else if (value == &pumpNo)
+    setIntegerField(INT_PUMP_NO, scaleInteger(INT_PUMP_NO, *value));
+  else if (value == &maxSpeed)
+    setIntegerField(INT_MAX_SPEED, scaleInteger(INT_MAX_SPEED, *value));
+  else if (value == &dispStop)
+    setIntegerField(INT_DISP_STOP, scaleInteger(INT_DISP_STOP, *value));
+  else if (value == &accTime)
+    setIntegerField(INT_ACC_TIME, scaleInteger(INT_ACC_TIME, *value));
+  else if (value == &decTime)
+    setIntegerField(INT_DEC_TIME, scaleInteger(INT_DEC_TIME, *value));
+}
+
+void menuSettingsApply(const MenuSettings *settings)
+{
+  if (settings == NULL)
+    return;
+
+  settings1Bit = settings->settings1Bit;
+  settings2Bit = settings->settings2Bit;
+
+  for (uint8_t index = 0; index < 6; index++)
+    settingsInt[index] = settings->settingsInt[index];
+
+  toneproduce = getPackedField(settings1Bit, 1, BOOL_TONE) != 0;
+  contrastflag = getPackedField(settings1Bit, 1, BOOL_CONTRAST) != 0;
+  currentcontrast = contrastflag ? 0 : 1;
+  languageHindi = getPackedField(settings1Bit, 1, BOOL_LANGUAGE) == 0;
+  currentLanguage = languageHindi ? 0 : 1;
+  tubingAlertEnabled = getPackedField(settings1Bit, 1, BOOL_TUBING_ALERT) != 0;
+  currtubeAlert = tubingAlertEnabled ? 0 : 1;
+  wifiEnabled = getPackedField(settings1Bit, 1, BOOL_WIFI) != 0;
+  currwifiSet = wifiEnabled ? 0 : 1;
+  wifiResetFlag = getPackedField(settings1Bit, 1, BOOL_WIFI_RESET) != 0;
+  currwifiReset = wifiResetFlag ? 0 : 1;
+  stopBit = getPackedField(settings1Bit, 1, BOOL_STOP_BIT) != 0;
+  currentStopBitIndex = stopBit ? 1 : 0;
+  levelTrigHigh = getPackedField(settings1Bit, 1, BOOL_LEVEL_TRIGGER) != 0;
+  currentLevelTrigIndex = levelTrigHigh ? 0 : 1;
+
+  currRTUnitSel = getPackedField(settings2Bit, 2, OPT_RT_UNIT);
+  currentRunTimeUnit = (runtimeUnit)currRTUnitSel;
+  currPTUnitSel = getPackedField(settings2Bit, 2, OPT_PT_UNIT);
+  currentPauseTimeUnit = (runtimeUnit)currPTUnitSel;
+  currRevAng = getPackedField(settings2Bit, 2, OPT_REVERSE_ANGLE);
+  currextMenu = getPackedField(settings2Bit, 2, OPT_EXT_CONTROL);
+  currentBaudIndex = getPackedField(settings2Bit, 2, OPT_BAUD_RATE);
+  currentParityIndex = getPackedField(settings2Bit, 2, OPT_PARITY);
+
+  reverseAngle = (uint16_t[]){0, 180, 360, 720}[currRevAng];
+  timeSet = unscaleInteger(INT_TIME_SET, bitGet(settingsInt[0], 0, 10));
+  pumpNo = unscaleInteger(INT_PUMP_NO, bitGet(settingsInt[1], 0, 10));
+  maxSpeed = unscaleInteger(INT_MAX_SPEED, bitGet(settingsInt[2], 0, 13));
+  dispStop = unscaleInteger(INT_DISP_STOP, bitGet(settingsInt[3], 0, 4));
+  accTime = unscaleInteger(INT_ACC_TIME, bitGet(settingsInt[4], 0, 10));
+  decTime = unscaleInteger(INT_DEC_TIME, bitGet(settingsInt[5], 0, 10));
+}
+
+void menuSettingsCollect(MenuSettings *settings)
+{
+  if (settings == NULL)
+    return;
+
+  packIntegerValue(&timeSet);
+  packIntegerValue(&pumpNo);
+  packIntegerValue(&maxSpeed);
+  packIntegerValue(&dispStop);
+  packIntegerValue(&accTime);
+  packIntegerValue(&decTime);
+
+  settings->settings1Bit = settings1Bit;
+  settings->settings2Bit = settings2Bit;
+
+  for (uint8_t index = 0; index < 6; index++)
+    settings->settingsInt[index] = settingsInt[index];
+}
 
 
 
@@ -27,13 +216,13 @@ const int visibleLines = 5;
 
 // Action Prototypes
 
-void primePump() {};
-void calibration() {};
-void diagnostics() {};
-void wifiReset() {};
-void factoryReset() {};
-void firmwareInfo() {};
-void aboutInfo() {};
+// void primePump() {};
+// void calibration() {};
+// void diagnostics() {};
+// void wifiReset() {};
+// void factoryReset() {};
+// void firmwareInfo() {};
+// void aboutInfo() {};
 
 uint16_t reverseAngle = 0;
 uint16_t currRevAng = 0;
@@ -170,41 +359,71 @@ struct MenuNode {
   uint16_t maxValue;
 };
 
+extern const MenuNode *currentMenu;
+extern uint16_t selected;
+
+static void setBoolSetting(void)
+{
+  const MenuNode *item = &currentMenu[selected];
+  uint16_t option = item->minValue;
+  uint8_t index = (uint8_t)item->maxValue;
+  bool enabled = option == 0;
+
+  setPackedField(&settings1Bit, 1, index, enabled);
+
+  switch (index) {
+    case BOOL_TONE: toneproduce = enabled; currtoneSet = option; break;
+    case BOOL_CONTRAST: contrastflag = enabled; currentcontrast = option; break;
+    case BOOL_LANGUAGE: languageHindi = enabled; currentLanguage = option; break;
+    case BOOL_TUBING_ALERT: tubingAlertEnabled = enabled; currtubeAlert = option; break;
+    case BOOL_WIFI: wifiEnabled = enabled; currwifiSet = option; break;
+    case BOOL_WIFI_RESET: wifiResetFlag = enabled; currwifiReset = option; break;
+    case BOOL_STOP_BIT: stopBit = enabled; currentStopBitIndex = option; break;
+    case BOOL_LEVEL_TRIGGER: levelTrigHigh = enabled; currentLevelTrigIndex = option; break;
+    default: break;
+  }
+
+  needsSave = true;
+}
+
+static void setTwoBitSetting(void)
+{
+  const MenuNode *item = &currentMenu[selected];
+  uint16_t option = item->minValue;
+  uint8_t index = (uint8_t)item->maxValue;
+
+  setPackedField(&settings2Bit, 2, index, option);
+
+  switch (index) {
+    case OPT_RT_UNIT: currRTUnitSel = option; currentRunTimeUnit = (runtimeUnit)option; break;
+    case OPT_PT_UNIT: currPTUnitSel = option; currentPauseTimeUnit = (runtimeUnit)option; break;
+    case OPT_REVERSE_ANGLE:
+      currRevAng = option;
+      reverseAngle = (uint16_t[]){0, 180, 360, 720}[option];
+      break;
+    case OPT_EXT_CONTROL: currextMenu = option; break;
+    case OPT_BAUD_RATE: currentBaudIndex = option; break;
+    case OPT_PARITY: currentParityIndex = option; break;
+    default: break;
+  }
+
+  needsSave = true;
+}
+
 // Functional
-void languHindi() {  needsSave = true; languageHindi = true; currentLanguage = 0;
-  bitsSet(settingsData, 5, 1, 0);
-}
-void languEnglish() {  needsSave = true; languageHindi = false; currentLanguage = 1;
-  bitsSet(settingsData, 5, 1, 1);
-}
 const MenuNode language[] = {
-  { "HINDI", NULL, NULL, 0, languHindi, NULL, 0, 0 },
-  { "ENGLISH", NULL, NULL, 0, languEnglish, NULL, 0, 0 },
+  { "HINDI", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_LANGUAGE },
+  { "ENGLISH", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_LANGUAGE },
 };
-void contrastLight(){ contrastflag = true; currentcontrast=0; needsSave = true;
-    // u8g2.sendF("c", 0x0a7); // Set contrast to light mode
-  bitsSet(settingsData, 1, 1, 1);
-}
-void contrastDark(){ contrastflag = false; currentcontrast=1; needsSave = true;
-  bitsSet(settingsData, 1, 1, 0);
-    // u8g2.sendF("c", 0x0a6); // Set contrast to dark mode
-} 
 const MenuNode contrastMenu[] = {
-  { "LIGHT", NULL, NULL, 0, contrastLight, NULL, 0, 0 },
-  { "DARK", NULL, NULL, 0, contrastDark, NULL, 0, 0 },
+  { "LIGHT", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_CONTRAST },
+  { "DARK", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_CONTRAST },
 };
 bool  toneproduce = false;
 
-void toneEnable(){ toneproduce = true;   needsSave = true; currtoneSet = 0;
-  bitsSet(settingsData, 0, 1, 1);
-  }
-void toneDisable(){ toneproduce = false;  needsSave = true; currtoneSet = 1;
-  bitsSet(settingsData, 0, 1, 0);
-}
-
 const MenuNode toneSet[] = {
-  { "ENABLE", NULL, NULL, 0, toneEnable, NULL, 0, 0 },
-  { "DISABLE", NULL, NULL, 0, toneDisable, NULL, 1, 0 },
+  { "ENABLE", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_TONE },
+  { "DISABLE", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_TONE },
 };
 
 const MenuNode generalMenu[] = {
@@ -219,63 +438,32 @@ const MenuNode generalMenu[] = {
 // runtimeUnit currentRunTimeUnit = seconds ;
 
 
-void selRTTimeSec(){currentRunTimeUnit = seconds;    currRTUnitSel = 3; needsSave = true; bitsSet(settingsData, 17, 2, 3);}
-void selRTTimeMin(){currentRunTimeUnit = minutes;    currRTUnitSel = 2; needsSave = true; bitsSet(settingsData, 17, 2, 2);}
-void selRTTimeHours(){currentRunTimeUnit = hours;    currRTUnitSel = 1; needsSave = true; bitsSet(settingsData, 17, 2, 1);}
-void selRTTimeDays (){ currentRunTimeUnit = days;    currRTUnitSel = 0; needsSave = true; bitsSet(settingsData, 17, 2, 0);}
-
 const MenuNode rtUnitMenu[] = {
-  { "DAYS", NULL, NULL, 0, selRTTimeDays, NULL, 0, 0 },
-  { "HOURS", NULL, NULL, 0, selRTTimeHours, NULL, 1, 0 },
-  { "MINUTES", NULL, NULL, 0, selRTTimeMin, NULL, 2, 0 },
-  { "SECONDS", NULL, NULL, 0, selRTTimeSec, NULL, 3, 0 },
+  { "DAYS", NULL, NULL, 0, setTwoBitSetting, NULL, 0, OPT_RT_UNIT },
+  { "HOURS", NULL, NULL, 0, setTwoBitSetting, NULL, 1, OPT_RT_UNIT },
+  { "MINUTES", NULL, NULL, 0, setTwoBitSetting, NULL, 2, OPT_RT_UNIT },
+  { "SECONDS", NULL, NULL, 0, setTwoBitSetting, NULL, 3, OPT_RT_UNIT },
 };
 
 // runtimeUnit currentPauseTimeUnit = seconds ;
 
-void selPauseTimeSec(){currentPauseTimeUnit = seconds;    currPTUnitSel = 3; needsSave = true; bitsSet(settingsData, 19, 2, 3);}
-void selPauseTimeMin(){currentPauseTimeUnit = minutes;    currPTUnitSel = 2; needsSave = true; bitsSet(settingsData, 19, 2, 2);}
-void selPauseTimeHours(){currentPauseTimeUnit = hours;    currPTUnitSel = 1; needsSave = true; bitsSet(settingsData, 19, 2, 1);}
-void selPauseTimeDays (){ currentPauseTimeUnit = days;    currPTUnitSel = 0; needsSave = true; bitsSet(settingsData, 19, 2, 0);}
-
 const MenuNode pauseTimeUnitMenu[] = {
-  { "DAYS", NULL, NULL, 0, selPauseTimeDays, NULL, 0, 0 },
-  { "HOURS", NULL, NULL, 0, selPauseTimeHours, NULL, 1, 0 },
-  { "MINUTES", NULL, NULL, 0, selPauseTimeMin, NULL, 2, 0 },
-  { "SECONDS", NULL, NULL, 0, selPauseTimeSec, NULL, 3, 0 },
+  { "DAYS", NULL, NULL, 0, setTwoBitSetting, NULL, 0, OPT_PT_UNIT },
+  { "HOURS", NULL, NULL, 0, setTwoBitSetting, NULL, 1, OPT_PT_UNIT },
+  { "MINUTES", NULL, NULL, 0, setTwoBitSetting, NULL, 2, OPT_PT_UNIT },
+  { "SECONDS", NULL, NULL, 0, setTwoBitSetting, NULL, 3, OPT_PT_UNIT },
 };
-
-void revAng0(){ reverseAngle=0; currRevAng=0; needsSave = true;
-bitsSet(settingsData, 2, 2, 0);
-}
-void revAng180(){ reverseAngle = 180; currRevAng=1;   needsSave = true;
-bitsSet(settingsData, 2, 2, 1);
-}
-void revAng360(){ reverseAngle = 360; currRevAng=2;    needsSave = true;
-bitsSet(settingsData, 2, 2, 2);
-}
-void revAng720(){ reverseAngle = 720;  currRevAng=3;    needsSave = true;
-bitsSet(settingsData, 2, 2, 3);
-
-}
-
 
 const MenuNode revAngMenu[] = {
-  { "0", NULL, NULL, 0, revAng0, NULL, 0, 0 },
-  { "180", NULL, NULL, 0, revAng180, NULL, 1, 0 },
-  { "360", NULL, NULL, 0, revAng360, NULL, 2, 0 },
-  { "720", NULL, NULL, 0, revAng720, NULL, 3, 0 },
+  { "0", NULL, NULL, 0, setTwoBitSetting, NULL, 0, OPT_REVERSE_ANGLE },
+  { "180", NULL, NULL, 0, setTwoBitSetting, NULL, 1, OPT_REVERSE_ANGLE },
+  { "360", NULL, NULL, 0, setTwoBitSetting, NULL, 2, OPT_REVERSE_ANGLE },
+  { "720", NULL, NULL, 0, setTwoBitSetting, NULL, 3, OPT_REVERSE_ANGLE },
 };
 
-void tubingAlertEnable(){ needsSave = true; tubingAlertEnabled = true;  currtubeAlert=0; 
-  bitsSet(settingsData, 6, 1, 1);}
-
-void tubingAlertDisable(){ needsSave = true; tubingAlertEnabled = false;  currtubeAlert=1; 
-  bitsSet(settingsData, 6, 1, 0);}
-
 const MenuNode tubeAlertMenu[] = {
-  { "YES", NULL, NULL, 0, NULL, NULL, 0, 0 },
-  { "NO", NULL, NULL, 0, NULL, NULL, 0, 0 },
+  { "YES", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_TUBING_ALERT },
+  { "NO", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_TUBING_ALERT },
 };
 
 const MenuNode funtionalMenu[] = {
@@ -287,47 +475,24 @@ const MenuNode funtionalMenu[] = {
   { "TUBING ALERT", "TUBE ALERT", tubeAlertMenu, 2, NULL, &currtubeAlert, 0, 0 },
 };
 
-void wifiEnable(){ wifiEnabled = true; currwifiSet=0; needsSave = true;
-  bitsSet(settingsData, 7, 1, 1);
-}
-void wifiDisable(){ wifiEnabled = false; currwifiSet=1; needsSave = true;
-  bitsSet(settingsData, 7, 1, 0);
-}
 const MenuNode wifiMenu[] = {
-  { "ENABLE", NULL, NULL, 0, wifiEnable, NULL, 0, 0 },
-  { "DISABLED", NULL, NULL, 0, wifiDisable, NULL, 0, 0 },
+  { "ENABLE", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_WIFI },
+  { "DISABLED", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_WIFI },
 };
-
-void wifiResetYes(){ wifiResetFlag = true; currwifiReset=0; needsSave = true;
-  bitsSet(settingsData, 8, 1, 1);
-}
-void wifiResetNo(){ wifiResetFlag = false; currwifiReset=1; needsSave = true;
-  bitsSet(settingsData, 8, 1, 0);
-}
-
 
 const MenuNode wifiResetMenu[] = {
-  { "YES", NULL, NULL, 0, wifiResetYes, NULL, 0, 0 },
-  { "NO", NULL, NULL, 0, wifiResetNo, NULL, 0, 0 },
+  { "YES", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_WIFI_RESET },
+  { "NO", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_WIFI_RESET },
 };
 
-void extCurrent(){ currextMenu=0; needsSave = true;
-  bitsSet(settingsData, 9, 2, 0);
-}
-void extVolt5(){ currextMenu=1; needsSave = true;
-  bitsSet(settingsData, 9, 2, 1);
-}
-void extVolt10(){ currextMenu=2; needsSave = true;
-  bitsSet(settingsData, 9, 2, 2);
-}
 const MenuNode extMenu[] = {
-  { "CURRENT", NULL, NULL, 0, extCurrent, NULL, 0, 0 },
-  { "VOLT 0-5V", NULL, NULL, 0, extVolt5, NULL, 0, 0 },
-  { "VOLT 0-10V", NULL, NULL, 0, extVolt10, NULL, 0, 0 },
+  { "CURRENT", NULL, NULL, 0, setTwoBitSetting, NULL, 0, OPT_EXT_CONTROL },
+  { "VOLT 0-5V", NULL, NULL, 0, setTwoBitSetting, NULL, 1, OPT_EXT_CONTROL },
+  { "VOLT 0-10V", NULL, NULL, 0, setTwoBitSetting, NULL, 2, OPT_EXT_CONTROL },
 };
 
 const MenuNode softwareMenu[] = {
-  { "BOOT V3.1.0", NULL, NULL, 0, wifiReset, NULL, 0, 0 },
+  { "BOOT V3.1.0", NULL, NULL, 0, NULL, NULL, 0, 0 },
   { "USER v3.2.3", NULL, NULL, 0, NULL, NULL, 0, 0 },
 };
 
@@ -339,63 +504,28 @@ const MenuNode ExternalMenu[] = {
 };
 
 
-void baud4800(){ currentBaudIndex=0; needsSave = true;
-  bitsSet(settingsData, 11, 2, 0);
-}
-void baud9800(){ currentBaudIndex=1; needsSave = true;
-  bitsSet(settingsData, 11, 2, 1);
-}
-void baud19200(){ currentBaudIndex=2; needsSave = true;
-  bitsSet(settingsData, 11, 2, 2);
-}
-void baud38400(){ currentBaudIndex=3; needsSave = true;
-  bitsSet(settingsData, 11, 2, 3);
-}
-
 const MenuNode baudMenu[] = {
-  { "4800", NULL, NULL, 0, baud4800, NULL, 0, 0 },
-  { "9800", NULL, NULL, 0, baud9800, NULL, 0, 0 },
-  { "19200", NULL, NULL, 0, baud19200, NULL, 0, 0 },
-  { "38400", NULL, NULL, 0, baud38400, NULL, 0, 0 },
+  { "4800", NULL, NULL, 0, setTwoBitSetting, NULL, 0, OPT_BAUD_RATE },
+  { "9800", NULL, NULL, 0, setTwoBitSetting, NULL, 1, OPT_BAUD_RATE },
+  { "19200", NULL, NULL, 0, setTwoBitSetting, NULL, 2, OPT_BAUD_RATE },
+  { "38400", NULL, NULL, 0, setTwoBitSetting, NULL, 3, OPT_BAUD_RATE },
 };
 
 
-void parityNone(){ currentParityIndex=0; needsSave = true;
-  bitsSet(settingsData, 13, 2, 0);
-}
-void parityEven(){ currentParityIndex=1; needsSave = true;
-  bitsSet(settingsData, 13, 2, 1);
-}
-void parityOdd(){ currentParityIndex=2; needsSave = true;
-  bitsSet(settingsData, 13, 2, 2);
-}
 const MenuNode parityMenu[] = {
-  { "NONE", NULL, NULL, 0, parityNone, NULL, 0, 0 },
-  { "EVEN", NULL, NULL, 0, parityEven, NULL, 0, 0 },
-  { "ODD", NULL, NULL, 0, parityOdd, NULL, 0, 0 },
+  { "NONE", NULL, NULL, 0, setTwoBitSetting, NULL, 0, OPT_PARITY },
+  { "EVEN", NULL, NULL, 0, setTwoBitSetting, NULL, 1, OPT_PARITY },
+  { "ODD", NULL, NULL, 0, setTwoBitSetting, NULL, 2, OPT_PARITY },
 };
 
-void stopBit1(){ currentStopBitIndex=0; needsSave = true;
-  bitsSet(settingsData, 15, 1, 0);
-}
-void stopBit2(){ currentStopBitIndex=1; needsSave = true;
-  bitsSet(settingsData, 15, 1, 1);
-}
 const MenuNode stopBitMenu[] = {
-  { "1", NULL, NULL, 0, stopBit1, NULL, 0, 0 },
-  { "0", NULL, NULL, 0, stopBit2, NULL, 0, 0 },
+  { "1", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_STOP_BIT },
+  { "0", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_STOP_BIT },
 };
-
-void levelTrigHighFunc(){ levelTrigHigh = true; currentLevelTrigIndex=0;    needsSave = true;
-  bitsSet(settingsData, 16, 1, 1);
-}
-void levelTrigLowFunc(){ levelTrigHigh = false; currentLevelTrigIndex=1;  needsSave = true;
-  bitsSet(settingsData, 16, 1, 0);
-}
 
 const MenuNode leveltrigmenu[] = {
-  { "HIGH", NULL, NULL, 0, levelTrigHighFunc, NULL, 0, 0 },
-  { "LOW", NULL, NULL, 0, levelTrigLowFunc, NULL, 0, 0 },
+  { "HIGH", NULL, NULL, 0, setBoolSetting, NULL, 0, BOOL_LEVEL_TRIGGER },
+  { "LOW", NULL, NULL, 0, setBoolSetting, NULL, 1, BOOL_LEVEL_TRIGGER },
 };
 
 const MenuNode systemMenu[] = {
@@ -656,6 +786,8 @@ void menuUp()
       if (*var < currentMenu[selected].maxValue)
       {
         (*var)++;
+        packIntegerValue(var);
+        needsSave = true;
       }
     }
     else
@@ -696,6 +828,8 @@ void menudown()
       if (*var > currentMenu[selected].minValue)
       {
         (*var)--;
+        packIntegerValue(var);
+        needsSave = true;
       }
     }  // <--- THIS BRACE WAS MISSING
     else
