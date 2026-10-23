@@ -151,7 +151,9 @@ void _SMPP_setVel(int v){
   _SMPP_toStepsCounter = -1;
 }
 void _SMPP_setRPM10(uint16_t rpm10){
-  _SMPP_stopFlag = 0;
+    if (_SMPP_isStopping()) {
+        return;
+    }
   if (rpm10 < MIN_RPM10) rpm10 = MIN_RPM10;
   if (rpm10 > MAX_RPM10) rpm10 = MAX_RPM10;
   _SMPP_setVel((int)(((uint32_t)rpm10 * _SMPP_SPR + 300u) / 600u));

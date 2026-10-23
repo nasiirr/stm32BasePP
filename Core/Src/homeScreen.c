@@ -4,7 +4,6 @@
 extern u8g2_t u8g2;
 
 bool common = true;
-uint8_t modecounter = 0;
 
 
 
@@ -78,7 +77,7 @@ void sound1(bool x)
 
 
 void rotation(){
-  bool dirState = (modecounter == 5 || modecounter == 2) ? currDirectionDB15 : clockwise;
+  bool dirState = (modeCounter == 5 || modeCounter == 2) ? currDirectionDB15 : clockwise;
   if (dirState) {
     u8g2_DrawXBM(&u8g2, 30, 38, 15, 15, rotationTrue);
   } else {

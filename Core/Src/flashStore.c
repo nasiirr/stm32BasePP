@@ -18,8 +18,12 @@
 #define MOTOR_META_OFFSET 2U
 
 #define MOTOR_SAVE_DELAY_MS 5000U
-#define MENU_SETTINGS_MAGIC 0x4D53U
-#define MENU_SETTINGS_WORDS 9U
+#define MENU_SETTINGS_MAGIC 0x4D54U
+#define MENU_SETTINGS_LEGACY_MAGIC 0x4D53U
+#define MENU_FLASH_PAGE_SIZE 1024U
+#define MENU_SETTINGS_WORDS 10U
+#define MENU_SETTINGS_RECORD_SIZE (MENU_SETTINGS_WORDS * sizeof(uint16_t))
+#define MENU_SETTINGS_RECORD_COUNT (MENU_FLASH_PAGE_SIZE / MENU_SETTINGS_RECORD_SIZE)
 #define MENU_SAVE_DELAY_MS 5000U
 
 static MotorSettings motorLastObserved;
@@ -94,6 +98,13 @@ static bool sequenceIsNewer(uint8_t candidate, uint8_t current)
     uint8_t difference = (uint8_t)((candidate - current) & META_SEQ_MASK);
 
     return difference != 0U && difference < 64U;
+}
+
+static bool menuSequenceIsNewer(uint16_t candidate, uint16_t current)
+{
+    uint16_t difference = (uint16_t)(candidate - current);
+
+    return difference != 0U && difference < 0x8000U;
 }
 
 static uint16_t packMetadata(uint8_t sequence,
@@ -318,9 +329,38 @@ void FlashStorage_ProcessMotorSave(void)
 
 bool FlashStorage_LoadMenu(MenuSettings *settings)
 {
+    uint16_t latestSequence = 0U;
+    bool found = false;
+
+    if (settings == NULL)
+        return false;
+
+    for (uint32_t slot = 0U; slot < MENU_SETTINGS_RECORD_COUNT; ++slot) {
+        const uint16_t *stored = (const uint16_t *)
+            (MENU_SETTINGS_PAGE + (slot * MENU_SETTINGS_RECORD_SIZE));
+
+        if (stored[0] != MENU_SETTINGS_MAGIC ||
+            (!found && stored[1] == 0xFFFFU) ||
+            (found && !menuSequenceIsNewer(stored[1], latestSequence)))
+            continue;
+
+        latestSequence = stored[1];
+        settings->settings1Bit = stored[2];
+        settings->settings2Bit = stored[3];
+
+        for (uint8_t index = 0; index < 6; index++)
+            settings->settingsInt[index] = stored[index + 4U];
+
+        found = true;
+    }
+
+    if (found)
+        return true;
+
+    /* Read the original fixed-format record until it is replaced. */
     const uint16_t *stored = (const uint16_t *)MENU_SETTINGS_PAGE;
 
-    if (settings == NULL || stored[0] != MENU_SETTINGS_MAGIC)
+    if (stored[0] != MENU_SETTINGS_LEGACY_MAGIC)
         return false;
 
     settings->settings1Bit = stored[1];
@@ -337,34 +377,67 @@ bool FlashStorage_SaveMenu(const MenuSettings *settings)
     FLASH_EraseInitTypeDef erase = {0};
     uint32_t pageError = 0U;
     uint16_t words[MENU_SETTINGS_WORDS];
+    uint32_t address = 0U;
+    uint16_t latestSequence = 0U;
+    bool hasErasedSlot = false;
 
     if (settings == NULL)
         return false;
 
     words[0] = MENU_SETTINGS_MAGIC;
-    words[1] = settings->settings1Bit;
-    words[2] = settings->settings2Bit;
+    words[2] = settings->settings1Bit;
+    words[3] = settings->settings2Bit;
 
-    for (uint8_t index = 0; index < 6; index++)
-        words[index + 3U] = settings->settingsInt[index];
+    for (uint32_t slot = 0U; slot < MENU_SETTINGS_RECORD_COUNT; ++slot) {
+        const uint16_t *stored = (const uint16_t *)
+            (MENU_SETTINGS_PAGE + (slot * MENU_SETTINGS_RECORD_SIZE));
 
-    HAL_FLASH_Unlock();
-    erase.TypeErase = FLASH_TYPEERASE_PAGES;
-    erase.PageAddress = MENU_SETTINGS_PAGE;
-    erase.NbPages = 1U;
+        if (stored[0] == MENU_SETTINGS_MAGIC &&
+            menuSequenceIsNewer(stored[1], latestSequence))
+            latestSequence = stored[1];
 
-    if (HAL_FLASHEx_Erase(&erase, &pageError) != HAL_OK) {
-        HAL_FLASH_Lock();
-        return false;
+        if (!hasErasedSlot && stored[0] == 0xFFFFU) {
+            address = MENU_SETTINGS_PAGE + (slot * MENU_SETTINGS_RECORD_SIZE);
+            hasErasedSlot = true;
+        }
     }
 
-    for (uint8_t index = 0; index < MENU_SETTINGS_WORDS; index++) {
+    words[1] = (uint16_t)(latestSequence + 1U);
+
+    for (uint8_t index = 0; index < 6; index++)
+        words[index + 4U] = settings->settingsInt[index];
+
+    HAL_FLASH_Unlock();
+
+    if (!hasErasedSlot) {
+        erase.TypeErase = FLASH_TYPEERASE_PAGES;
+        erase.PageAddress = MENU_SETTINGS_PAGE;
+        erase.NbPages = 1U;
+
+        if (HAL_FLASHEx_Erase(&erase, &pageError) != HAL_OK) {
+            HAL_FLASH_Lock();
+            return false;
+        }
+
+        address = MENU_SETTINGS_PAGE;
+        words[1] = 0U;
+    }
+
+    /* Write the payload first and the magic last, so incomplete records are ignored. */
+    for (uint8_t index = 1U; index < MENU_SETTINGS_WORDS; index++) {
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
-                              MENU_SETTINGS_PAGE + (index * 2U),
+                              address + (index * 2U),
                               words[index]) != HAL_OK) {
             HAL_FLASH_Lock();
             return false;
         }
+    }
+
+    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
+                          address,
+                          words[0]) != HAL_OK) {
+        HAL_FLASH_Lock();
+        return false;
     }
 
     HAL_FLASH_Lock();

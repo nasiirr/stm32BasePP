@@ -76,7 +76,6 @@ extern unsigned long LongPresslastModeKEyPressedTime ;
 
 
 //disp cycle 
-extern volatile uint32_t logicalTick100ms ;
 extern volatile uint32_t dispenseElapsedTicks ;
 extern volatile uint32_t totalRemaining;
 extern volatile uint32_t phaseRemaining;

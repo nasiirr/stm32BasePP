@@ -30,7 +30,6 @@ volatile uint32_t cyclesLeft = 0;
 
 volatile bool startReq = false ;
 volatile bool stopReq = false ;
-volatile uint32_t logicalTick100ms = 0;
 volatile uint32_t dispenseElapsedTicks = 0;
 
 uint32_t runTicks = 0 ;
@@ -39,27 +38,40 @@ uint32_t totalTicks = 0;
 
 
 
-uint8_t  Disp_TakeEvents(void){
-    uint8_t events = dispEvt;
-    dispEvt = 0U;
-    return events ;
-}
+   uint32_t Disp_TakeEvents(void) {
+       uint32_t pm = __get_PRIMASK();
+       __disable_irq();
+       uint32_t e = dispEvt;
+       dispEvt = 0;
+       __set_PRIMASK(pm);
+       return e;
+   }
 
 
-void Disp_CompleteReverse(void ){
-    if(phase!= D_REVERSING)
-    return;
+void Disp_CompleteReverse(void)
+{
+    if (phase != D_REVERSING)
+        return;
 
-    if(dispCycles !=0 && cyclesLeft == 1U){
+    if (!DispenseRunning)
+    {
+        // Manual stop: reverse is complete, do not resume dispensing.
         phase = D_IDLE;
-        DispenseRunning = false ;
+        dispEvt |= DISP_EVT_FINISHED;
+        return;
+    }
+
+    if (dispCycles != 0 && cyclesLeft == 1U)
+    {
+        phase = D_IDLE;
+        DispenseRunning = false;
         dispEvt |= DISP_EVT_FINISHED;
     }
-    else {
-        phase = D_PAUSE ;
-        phaseRemaining = pauseTicks ;
+    else
+    {
+        phase = D_PAUSE;
+        phaseRemaining = pauseTicks;
         dispenseElapsedTicks = 0;
-        // PauseStartTime = HAL_GetTick();
         currentPumpState = pumpPausedDisp;
     }
 }
@@ -78,21 +90,26 @@ void DispTick100ms(){
     currentPumpState = pumpPausedDisp;
     return;
 }
-    if(stopReq){
-        stopReq = false ;
+    if (stopReq) {
+    stopReq = false;
 
-        if (phase != D_IDLE){
-            _SMPP_stop_int();
+    if (phase != D_IDLE) {
+        _SMPP_stop_int();
 
-            pumpRunning = false ;
-            DispenseRunning = false ;
-            
-            phase  = D_IDLE ;
+        pumpRunning = false;
+        DispenseRunning = false;
 
-            dispEvt |= DISP_EVT_STOPPED ;
+        if (reverseAngle > 0) {
+            phase = D_REVERSING;
+            dispEvt |= DISP_EVT_REVERSE;
+        } else {
+            phase = D_IDLE;
+            dispEvt |= DISP_EVT_STOPPED;
         }
-             return;
     }
+
+    return;
+}
 
     if(startReq){
         startReq = false ;
@@ -164,7 +181,7 @@ else {
         CycleElapsed--;
     }
 
-    phase = D_RUN;
+    CycleElapsed = D_RUN;
     phaseRemaining = runTicks;
     dispenseElapsedTicks = 0;
     pumpRunning = true;
@@ -241,8 +258,6 @@ void tickDisp()
 
         currentPumpState = pumpRunningDisp;
 
-        _SMPP_setDir(clockwise);
-        _SMPP_setRPM10(rpm);
 
         if (dispCycles != 0)
         {
@@ -272,22 +287,19 @@ void tickDisp()
     // --------------------------------------------------
 
     if (events & DISP_EVT_REVERSE)
-    {
-        currentPumpState = pumpStoppingDisp;
+{
+    currentPumpState = pumpStoppingDisp;
 
-        _SMPP_stop_int();
-
-        while (_SMPP_isStopping())
-        {
-            osDelay(1);
-        }
-
-        _SMPP_setDir(!clockwise);
-
-        _SMPP_runReverseAngle(reverseAngle, rpm);
-
-        Disp_CompleteReverse();
+    while (_SMPP_isStopping()) {
+        osDelay(1);
     }
+
+    _SMPP_setDir(!clockwise);
+    _SMPP_runReverseAngle(reverseAngle, rpm);
+    _SMPP_setDir(clockwise);
+
+    Disp_CompleteReverse();
+}
 
 
     // --------------------------------------------------
@@ -298,8 +310,6 @@ void tickDisp()
     {
         pumpRunning = false;
         DispenseRunning = false;
-
-        _SMPP_stop_int();
 
         clearLoadingBar();
 
@@ -331,7 +341,6 @@ void tickDisp()
 void Disp_OnTimer100ms(TIM_HandleTypeDef *htim){
     if(htim != NULL && htim->Instance == TIM1) {
         DispTick100ms();
-        // logicalTick100ms++;
     }
 
 }

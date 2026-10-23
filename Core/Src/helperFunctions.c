@@ -137,10 +137,12 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
   else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 10;
 
   rpm = (uint16_t)constrainInt32(rpm + step, MIN_RPM10, MAX_RPM10);
-     if (_SMPP_isRunning() && maxSpeedRunning==false)
-      {
-        _SMPP_setRPM10(rpm);
-      }
+    if (_SMPP_isRunning() &&
+    !_SMPP_isStopping() &&
+    !maxSpeedRunning)
+{
+    _SMPP_setRPM10(rpm);
+}
     }
 
 if (pressedWithDebounce(GPIOB, DOWN_Pin, &lastState[downKey], &lastPressTime[downKey] ,&LongPressdownLastPressTime ))
@@ -151,11 +153,12 @@ if (pressedWithDebounce(GPIOB, DOWN_Pin, &lastState[downKey], &lastPressTime[dow
   else if (HAL_GetTick() - lastPressTime[downKey] > 2500) step = 10;
 
   rpm = (uint16_t)constrainInt32(rpm - step, MIN_RPM10, MAX_RPM10);
-       if (_SMPP_isRunning() && maxSpeedRunning==false)
-      {
-        _SMPP_setRPM10(rpm);
-      
-    }
+      if (_SMPP_isRunning() &&
+    !_SMPP_isStopping() &&
+    !maxSpeedRunning)
+{
+    _SMPP_setRPM10(rpm);
+}
 
     }
 
@@ -306,7 +309,6 @@ BorderLine boarderr[] = {
 
 const uint16_t totalPixels = 373;
 uint32_t loadingTime;  /* total job length, 100 ms ticks */
-uint32_t loadStartTick;   /* logicalTick100ms when the job began */
 
 int pixelsDrawn = 0;
 int currLine = 0;
@@ -369,7 +371,6 @@ void startLoading(uint32_t ticks)
 
 clearLoadingBar();
   loadingTime   = ticks;
- loadStartTick = logicalTick100ms;
    pixelsDrawn = 0;
 
    currLine = 0;
@@ -391,7 +392,7 @@ void loadingTask()
 {
 if (loadingTime == 0U) return;
 
-  uint32_t elapsed = logicalTick100ms - loadStartTick;
+  uint32_t elapsed = loadingTime - totalRemaining;
   if (elapsed > loadingTime) elapsed = loadingTime;
 
   /* 32-bit safe: exact up to ~13 days of ticks, then coarse scaling */
@@ -414,28 +415,21 @@ if (loadingTime == 0U) return;
 
 void dispCycleRunningScreenUpdate(void)
 {
-    static uint32_t lastUpdateTick = 0;
+    static uint32_t lastElapsedTicks = UINT32_MAX;
 
     char fullStrTime[20];
     char fullStrCycles[20];
-
-    uint32_t nowTick;
     uint32_t elapsedTicks;
     uint32_t whole;
     uint32_t fraction;
     const char *unit;
 
-    if (!startelapsedupdate || !DispenseRunning)
-        return;
-
-    nowTick = logicalTick100ms;
-
-    if (nowTick == lastUpdateTick)
-        return;
-
-    lastUpdateTick = nowTick;
-
     elapsedTicks = dispenseElapsedTicks;
+
+    if (elapsedTicks == lastElapsedTicks)
+        return;
+
+    lastElapsedTicks = elapsedTicks;
 
     if (elapsedTicks >= 864000U)
     {

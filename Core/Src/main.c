@@ -583,15 +583,15 @@ void StartDefaultTask(void *argument)
   { Buzzer_Beep();
     if(changeMenu ==true && pumpRunning==false)
    {
-   SelectButton();
-   BackButton();
-   menuUp();
-   menudown();
-    if (changeMenu && menuUpdate) {
-      drawMenu();
-      menuUpdate = false;
-    }
-  // menu2Poll();
+  //  SelectButton();
+  //  BackButton();
+  //  menuUp();
+  //  menudown();
+  //   if (changeMenu && menuUpdate) {
+  //     drawMenu();
+  //     menuUpdate = false;
+  //   }
+  menu2Poll();
         }
       else if (!changeMenu)
       { 
