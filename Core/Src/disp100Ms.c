@@ -80,7 +80,16 @@ void Disp_CompleteReverse(void)
 
 void DispTick100ms(){
    if (phase == D_WAIT_STOP) {
-    if (_SMPP_isStopping()) {
+    if (_SMPP_isStopping() || _SMPP_isRunning()) {
+        _SMPP_stop_int();
+        return;
+    }
+
+    if (dispCycles != 0 && cyclesLeft == 1U) {
+        phase = D_IDLE;
+        pumpRunning = false;
+        DispenseRunning = false;
+        dispEvt |= DISP_EVT_FINISHED;
         return;
     }
 
@@ -159,9 +168,9 @@ void DispTick100ms(){
     dispEvt |= DISP_EVT_REVERSE;
 }
 else if (dispCycles != 0 && cyclesLeft == 1U) {
-    phase = D_IDLE;
-    DispenseRunning = false;
-    dispEvt |= DISP_EVT_FINISHED;
+    phase = D_WAIT_STOP;
+    dispenseElapsedTicks = 0;
+    currentPumpState = pumpStoppingDisp;
 }
 else {
     phase = D_WAIT_STOP;

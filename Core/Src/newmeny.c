@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define LEN(a)   ((int)(sizeof(a) / sizeof((a)[0])))
-#define VISIBLE  4
+#define VISIBLE  4  
 #define RIGHT_X  120
 
 /* ================= settings: ONE variable per setting ================= */
