@@ -203,7 +203,7 @@ static void menu2Key(Key k)
   if (editing) {
     const Item *it = &c->items[item];
     if (k == K_UP || k == K_DOWN) {
-      int d = (k == K_UP) ? 1 : -1;
+      int d = (k == K_UP) ? -1 : 1;
       if (it->labels) *it->val = wrap(*it->val + d, it->max + 1);
       else            *it->val = constrainInt32(*it->val + d, it->min, it->max);
       menu2Apply();

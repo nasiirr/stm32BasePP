@@ -190,7 +190,7 @@ else {
         CycleElapsed--;
     }
 
-    CycleElapsed = D_RUN;
+    phase  = D_RUN;
     phaseRemaining = runTicks;
     dispenseElapsedTicks = 0;
     pumpRunning = true;
