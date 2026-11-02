@@ -122,7 +122,7 @@ typedef struct { const char *name, *title; const Item *items; uint8_t count; } C
 
 #define NUM(n, v, lo, hi)  { n, &(v), lo, hi, NULL, NULL }
 #define CHOICE(n, v, l)    { n, &(v), 0, LEN(l) - 1, l, NULL }
-#define INFO(n)            { n, NULL, 0, 0, NULL, NULL }
+#define INFO(n , l)            { n, NULL, 0, 0, l, NULL }
 #define ACTION(n, f)       { n, NULL, 0, 0, NULL, f }
 
 /* index 1 = "on" for every bool-like list, so the value IS the bool */
@@ -138,6 +138,7 @@ static const char *const L_REV[]    = {"0", "180", "360", "720"};
 static const char *const L_EXT[]    = {"CURRENT", "0-5V", "0-10V"};
 static const char *const L_BAUD[]   = {"4800", "9600", "19200", "38400"};
 static const char *const L_PARITY[] = {"NONE", "EVEN", "ODD"};
+static const char *const L_SOFTWARE[] = {"BOOT V3.1.0" , "USER v3.2.3"}; 
 
 
 static const Item generalItems[] = {
@@ -157,7 +158,7 @@ static const Item functionalItems[] = {
 static const Item systemItems[] = {
   CHOICE("BAUD",        cfg.baud,     L_BAUD),
   CHOICE("PARITY",      cfg.parity,   L_PARITY),
-  INFO  ("PLS TRIG"),
+  // INFO  ("PLS TRIG"),
   CHOICE("LVL TRIG",    cfg.levelTrig, L_LEVEL),
   NUM   ("DISP STOP",   cfg.dispStop, 0, 10),
   NUM   ("ACC TIME",    cfg.accTime,  0, 999),
@@ -169,8 +170,9 @@ static const Item externalItems[] = {
   CHOICE("WIFI SET",    cfg.wifi,      L_WIFI),
   CHOICE("WIFI RST",    cfg.wifiReset, L_YESNO),
   CHOICE("EXT CONT",    cfg.extCtrl,   L_EXT),
-  INFO  ("BOOT V3.1.0"),
-  INFO  ("USER v3.2.3"),
+  INFO("SOFTWARE" , L_SOFTWARE),
+  // INFO  ("BOOT V3.1.0"),
+  // INFO  ("USER v3.2.3"),
 };
 
 static const Category cats[] = {
@@ -276,7 +278,8 @@ void menu2Draw(void)
         u8g2_DrawStr(&u8g2, x, y, s);
       }
     } else {
-      snprintf(buf, sizeof buf, "%u", *it->val);
+      ValtoStr(*it->val , buf , sizeof buf);
+      // snprintf(buf, sizeof buf, "%u", *it->val);
       u8g2_DrawStr(&u8g2, RIGHT_X - u8g2_GetStrWidth(&u8g2, buf), 37, buf);
     }
   } else {                                          /* list on the right */

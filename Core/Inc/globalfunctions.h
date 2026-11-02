@@ -20,8 +20,8 @@ void dispCycleRunningScreenUpdate();
 
 
 //helper functions 
+ void ValtoStr(uint16_t val, char *buf, size_t buflen);
 void Buzzer_Beep();
-void float2s1(uint16_t val, char *buf, size_t buflen);
 void rpmUpdateButtonsHandle();
 
 struct line

@@ -5,21 +5,14 @@
 //initializer 
 pumpStateDisp currentPumpState = pumpStoppedDisp;
 int rpmext = 0;
+bool buzzeronOff = false ;
+bool clockwise = true ;
 
-// const char* modesarr[] = {
-//   "DISP ", "INT", "EXTV", "EXTI", "LEV1", "LEV2",
-// }; 
-// Converts a float to "X.XX" with proper rounding, no dtoa/mprec needed.
-// 1-decimal float-to-string, no dtoa/mprec/double needed
- void float2s1(uint16_t val, char *buf, size_t buflen) {
+ void ValtoStr(uint16_t val, char *buf, size_t buflen) {
 if (val < 1000) {
-    // Below 100 RPM: one decimal place
-    snprintf(buf, buflen, "%u.%u",
-             val / 10u, val % 10u);
+    snprintf(buf, buflen, "%u.%u", val / 10u, val % 10u);  // Below 100 RPM: one decimal place
 } else {
-    // 100 RPM and above: integer
-    snprintf(buf, buflen, "%u",
-             val / 10u);
+    snprintf(buf, buflen, "%u", val / 10u);      // 100 RPM and above: integer
 }
 }
 
@@ -28,7 +21,6 @@ void menuButtonHandle() {
   
   if (DispenseRunning==false && maxSpeedRunning==false && pumpRunning == false && pressedWithDebounce(GPIOB, MENU_Pin, &lastState[menuKey], &lastPressTime[menuKey], NULL)  ) {
     changeMenu = !changeMenu;
-    // nextLoop = !nextLoop ;
     clearLoadingBar();
 
     u8g2_ClearBuffer(&u8g2);
@@ -36,10 +28,6 @@ void menuButtonHandle() {
       menuUpdate = true;  
     }
     if(!changeMenu){
-      // if(needsSave){
-      // settingsSave() ;
-      // needsSave = false;
-      // }
       
       modeUpdate=true;
       menuUpdateMain=true;
@@ -48,40 +36,6 @@ void menuButtonHandle() {
     
   }
 }
-// void modeButtonHandle(){
-//   if(intRunning == false && dispTimeEdit == false && DispenseRunning==false && maxSpeedRunning==false && 
-//     pressedWithDebounce( GPIOB, MODE_Pin, &lastState[modeKey],&lastPressTime[modeKey] , &LongPresslastModeKEyPressedTime )){
-//     modeCounter ++;
-//     modeUpdate=true;
-//     if (modeCounter>5){
-//       modeCounter = 0;
-//     }
-//     if(modeCounter==0){
-//       menuUpdateMain = true ;
-//       resetMenuStateDisp() ;
-//       drawMenuMain();
-      
-//     }
-//   }
-   
-
-//     if(modeUpdate && currentScreen != SCREEN_TIME){
-      
-//   u8g2_SetDrawColor(&u8g2, 0);
-//   u8g2_DrawBox( &u8g2, 29, 5, 32, 15);
-//   u8g2_SetDrawColor(&u8g2, 1);
-//   u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
-//   u8g2_DrawStr(&u8g2 , 29, 20, modesarr[modeCounter]);
-//   if(DispenseRunning){
-//       u8g2_SetDrawColor(&u8g2, 0);
-
-//       u8g2_DrawBox(&u8g2, 65,3,60,22);
-
-//       u8g2_SetDrawColor(&u8g2, 1);
-//   }
-
-//   }
-// }
  
 void rpmUpdateScreen() {
   u8g2_SetDrawColor(&u8g2, 0);
@@ -93,9 +47,9 @@ void rpmUpdateScreen() {
   bool isExt = (modeCounter == 2);
 
   if (!isExt) {
-    float2s1(rpm, bufRPM, sizeof(bufRPM));
+    ValtoStr(rpm, bufRPM, sizeof(bufRPM));
 } else {
-    float2s1(rpmext, bufRPM, sizeof(bufRPM));
+    ValtoStr(rpmext, bufRPM, sizeof(bufRPM));
 }
 
   const int gap = 1;
@@ -114,13 +68,9 @@ void rpmUpdateScreen() {
       u8g2_SetDrawColor(&u8g2, 0);
 
       u8g2_DrawStr(&u8g2, x, 22, "RPM");
-  // u8g2.setCursor(x, 22);
-  // u8g2.print("RPM");
 
   x += titleWidth + gap;
   u8g2_DrawStr(&u8g2, x, 22, ":");
-  // u8g2.setCursor(x, 22);
-  // u8g2.print(":");
 
   x += colonWidth + gap;
   u8g2_DrawStr(&u8g2, x, 22, bufRPM);
@@ -137,9 +87,7 @@ if (DispenseRunning == true || modeCounter==1 || modeCounter==4 || modeCounter==
   else if (HAL_GetTick() - lastPressTime[upKey] > 2500) step = 10;
 
   rpm = (uint16_t)constrainInt32(rpm + step, MIN_RPM10, MAX_RPM10);
-    if (_SMPP_isRunning() &&
-    !_SMPP_isStopping() &&
-    !maxSpeedRunning)
+    if (_SMPP_isRunning() && !_SMPP_isStopping() && !maxSpeedRunning)
 {
     _SMPP_setRPM10(rpm);
 }
@@ -168,30 +116,6 @@ modeUpdate = false;
 }
 
 
-  //dispense .ccp
-
-// U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2_U8G2_R2, U8X8_PIN_NONE, U8X8_PIN_NONE);  // i2c
-
-
-
-
-
-//partial display updates
-// void updateDisplayAreaPixel(int x, int y, int w, int h)
-// {
-//     // Convert pixel rectangle to 8x8 tile rectangle
-//     int tx = x / 8;
-//     int ty = y / 8;
-
-//     int tx2 = (x + w - 1) / 8;
-//     int ty2 = (y + h - 1) / 8;
-
-//     int tw = tx2 - tx + 1;
-//     int th = ty2 - ty + 1;
-
-//     u8g2_updateDisplayArea(tx, ty, tw, th);
-// }
-
 
 
 bool maxSpeedRunning = false;
@@ -199,7 +123,8 @@ bool lastmaxSpeedKeyState =  true;
 unsigned long lastMaxSpeedKeyPressedTime = 0;
 uint16_t portSnapshot = 0xFFFF;   
 void maxSpeedKeyHandle(){
-  if(modeCounter!=5 && modeCounter!=4 && modeCounter!=2 && DispenseRunning==false && pressedWithDebounce(GPIOA, MAX_SPEED_Pin,&lastState[maxSpeedKey],&lastPressTime[maxSpeedKey] , NULL) ){
+  if(modeCounter!=5 && modeCounter!=4 && modeCounter!=2 && DispenseRunning==false && 
+    pressedWithDebounce(GPIOA, MAX_SPEED_Pin,&lastState[maxSpeedKey],&lastPressTime[maxSpeedKey] , NULL) ){
     maxSpeedRunning=!maxSpeedRunning;
     if(maxSpeedRunning){
       _SMPP_setRPM10((uint16_t)maxSpeed);
@@ -214,15 +139,6 @@ void maxSpeedKeyHandle(){
   }
 
 }
-bool buzzeronOff = false ;
-void lockKeyHandle(){
-          
-}
-
-
-
-
-bool clockwise = true ;
 
 void RotationBUttonHandle()
 { 
@@ -265,30 +181,6 @@ int boarderTaskTime(){
 
 
 
-// void menuButtonHandle() {
- 
-//   if (DispenseRunning==false && maxSpeedRunning==false && pumpRunning == false && pressedWithDebounce(GPIOB , MENU_Pin, &lastState[menuKey], &lastPressTime[menuKey] , NULL)) {
-//     changeMenu = !changeMenu;
-//     // nextLoop = !nextLoop ;
-//     clearLoadingBar();
-
-//     u8g2_ClearBuffer(&u8g2);
-//     if (changeMenu) {
-//       menuUpdate = true;  
-//     }
-//     if(!changeMenu){
-//       if(needsSave){
-//       settingsSave() ;
-//       needsSave = false;
-//       }
-//       modeUpdate=true;
-//       menuUpdateMain=true;
-//     }
-    
-//   }
-// }
-
-
 
 
 //boarder Animations;
@@ -315,15 +207,6 @@ int currLine = 0;
 int xc = 0;
 int yc = 0;
 
-
-// void resyncLoadingBar(uint64_t nominalElapsedSoFar)
-// {
-//   if (nominalTotalLoadTime == 0) return;        // not currently loading
-//   uint64_t actualElapsed = HAL_GetTick() - startTime; // real ms since load started
-//   int64_t drift = (int64_t)actualElapsed - (int64_t)nominalElapsedSoFar;
-//   loadingTime = (long)(nominalTotalLoadTime + drift);
-//   if (loadingTime < 1) loadingTime = 1;          // guard divide-by-zero in loadingTask()
-// }
 
 void boarder()
 {
@@ -375,18 +258,6 @@ clearLoadingBar();
 
    currLine = 0;
 }
-// void startLoading(long time)
-// {
-// clearLoadingBar();
-//   loadingTime = time;
-//   nominalTotalLoadTime = time;      
-//   startTime = HAL_GetTick();
-//   pixelsDrawn = 0;
-//   // nextLoop = false;
-//   currLine = 0;
-//   xc = boarderr[currLine].x;
-//   yc = boarderr[currLine].y;
-// }
 
 void loadingTask()
 {
@@ -407,10 +278,6 @@ if (loadingTime == 0U) return;
     pixelsDrawn++;
   }
 
-  // if (pixelsDrawn >= totalPixels)
-  // {
-  //   nextLoop = true;   
-  // }
 }
 
 void dispCycleRunningScreenUpdate(void)

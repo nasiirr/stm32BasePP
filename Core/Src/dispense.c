@@ -291,7 +291,7 @@ void drawMenuRow(const char* title, MenuItem* item, int y, bool selected, bool e
   if (hasValue) {
     if (item->type == VALUE_SCALED) {
       uint16_t value = *(uint16_t*)item->value;
-      float2s1(value, buf, sizeof(buf));
+      ValtoStr(value, buf, sizeof(buf));
     } else {
       uint16_t value = *(uint16_t*)item->value;
       snprintf(buf, sizeof(buf), "%u", (unsigned)value);
