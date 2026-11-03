@@ -8,13 +8,13 @@ int rpmext = 0;
 bool buzzeronOff = false ;
 bool clockwise = true ;
 
- void ValtoStr(uint16_t val, char *buf, size_t buflen) {
-if (val < 1000) {
-    snprintf(buf, buflen, "%u.%u", val / 10u, val % 10u);  // Below 100 RPM: one decimal place
-} else {
-    snprintf(buf, buflen, "%u", val / 10u);      // 100 RPM and above: integer
-}
-}
+//  void ValtoStr(uint16_t val, char *buf, size_t buflen) {
+// if (val < 1000) {
+//     snprintf(buf, buflen, "%u.%u", val / 10u, val % 10u);  // Below 100 RPM: one decimal place
+// } else {
+//     snprintf(buf, buflen, "%u", val / 10u);      // 100 RPM and above: integer
+// }
+// }
 
 
 void menuButtonHandle() {
@@ -280,79 +280,79 @@ if (loadingTime == 0U) return;
 
 }
 
-void dispCycleRunningScreenUpdate(void)
-{
-    static uint32_t lastElapsedTicks = UINT32_MAX;
+// void dispCycleRunningScreenUpdate(void)
+// {
+//     static uint32_t lastElapsedTicks = UINT32_MAX;
 
-    char fullStrTime[20];
-    char fullStrCycles[20];
-    uint32_t elapsedTicks;
-    uint32_t whole;
-    uint32_t fraction;
-    const char *unit;
+//     char fullStrTime[20];
+//     char fullStrCycles[20];
+//     uint32_t elapsedTicks;
+//     uint32_t whole;
+//     uint32_t fraction;
+//     const char *unit;
 
-    elapsedTicks = dispenseElapsedTicks;
+//     elapsedTicks = dispenseElapsedTicks;
 
-    if (elapsedTicks == lastElapsedTicks)
-        return;
+//     if (elapsedTicks == lastElapsedTicks)
+//         return;
 
-    lastElapsedTicks = elapsedTicks;
+//     lastElapsedTicks = elapsedTicks;
 
-    if (elapsedTicks >= 864000U)
-    {
-        whole = elapsedTicks / 864000U;
-        fraction = (elapsedTicks % 864000U) / 86400U;
-        unit = "days";
-    }
-    else if (elapsedTicks >= 36000U)
-    {
-        whole = elapsedTicks / 36000U;
-        fraction = (elapsedTicks % 36000U) / 3600U;
-        unit = "hours";
-    }
-    else if (elapsedTicks >= 600U)
-    {
-        whole = elapsedTicks / 600U;
-        fraction = (elapsedTicks % 600U) / 60U;
-        unit = "mins";
-    }
-    else
-    {
-        whole = elapsedTicks / 10U;
-        fraction = elapsedTicks % 10U;
-        unit = "secs";
-    }
+//     if (elapsedTicks >= 864000U)
+//     {
+//         whole = elapsedTicks / 864000U;
+//         fraction = (elapsedTicks % 864000U) / 86400U;
+//         unit = "days";
+//     }
+//     else if (elapsedTicks >= 36000U)
+//     {
+//         whole = elapsedTicks / 36000U;
+//         fraction = (elapsedTicks % 36000U) / 3600U;
+//         unit = "hours";
+//     }
+//     else if (elapsedTicks >= 600U)
+//     {
+//         whole = elapsedTicks / 600U;
+//         fraction = (elapsedTicks % 600U) / 60U;
+//         unit = "mins";
+//     }
+//     else
+//     {
+//         whole = elapsedTicks / 10U;
+//         fraction = elapsedTicks % 10U;
+//         unit = "secs";
+//     }
 
-    timeElapsedTenths = elapsedTicks;
+//     timeElapsedTenths = elapsedTicks;
 
-    snprintf(fullStrTime,
-             sizeof(fullStrTime),
-             "%lu.%lu %s",
-             (unsigned long)whole,
-             (unsigned long)fraction,
-             unit);
+//     snprintf(fullStrTime,
+//              sizeof(fullStrTime),
+//              "%lu.%lu %s",
+//              (unsigned long)whole,
+//              (unsigned long)fraction,
+//              unit);
 
-    snprintf(fullStrCycles,
-             sizeof(fullStrCycles),
-             "%d cycles",
-             CycleElapsed);
+//     snprintf(fullStrCycles,
+//              sizeof(fullStrCycles),
+//              "%d cycles",
+//              CycleElapsed);
 
-    u8g2_SetDrawColor(&u8g2, 0);
-    u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
+//     u8g2_SetDrawColor(&u8g2, 0);
+//     u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
 
-    u8g2_SetDrawColor(&u8g2, 1);
-    u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
+//     u8g2_SetDrawColor(&u8g2, 1);
+//     u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
 
-    u8g2_DrawStr(&u8g2,
-                 122 - u8g2_GetStrWidth(&u8g2, fullStrTime),
-                 42,
-                 fullStrTime);
+//     u8g2_DrawStr(&u8g2,
+//                  122 - u8g2_GetStrWidth(&u8g2, fullStrTime),
+//                  42,
+//                  fullStrTime);
 
-    u8g2_DrawStr(&u8g2,
-                 122 - u8g2_GetStrWidth(&u8g2, fullStrCycles),
-                 55,
-                 fullStrCycles);
-}
+//     u8g2_DrawStr(&u8g2,
+//                  122 - u8g2_GetStrWidth(&u8g2, fullStrCycles),
+//                  55,
+//                  fullStrCycles);
+// }
 // void dispCycleRunningScreenUpdate(){
 //   static uint32_t lastUpdate = 0;
 //   char fullStrTime[20];
@@ -481,3 +481,162 @@ void dispCycleRunningScreenUpdate(void)
 //         }
 //     }
 // }
+void ValtoStr(uint32_t val, char *buf, size_t buflen)
+{
+    if (buf == NULL || buflen == 0U)
+        return;
+
+    const char *suffix = "";
+    uint32_t number;
+    uint8_t decimal = 0;
+    uint8_t decimalDigit = 0;
+
+    // Special TIME format
+    if (val & 0x80000000UL)
+    {
+        val &= 0x3FFFFFFFUL;
+
+        number = val / 10U;
+        decimalDigit = val % 10U;
+        decimal = 1;
+
+        // Unit is selected by dispCycleRunningScreenUpdate()
+        if (val >= 8640000UL)
+            suffix = " days";
+        else if (val >= 360000UL)
+            suffix = " hours";
+        else if (val >= 6000UL)
+            suffix = " mins";
+        else
+            suffix = " secs";
+    }
+    // Special INTEGER format (cycles)
+    else if (val & 0x40000000UL)
+    {
+        number = val & 0x3FFFFFFFUL;
+        suffix = " cycles";
+    }
+    // Normal format (existing RPM calls)
+    else
+    {
+        number = val / 10U;
+
+        if (val < 1000U)
+        {
+            decimal = 1;
+            decimalDigit = val % 10U;
+        }
+    }
+
+    // Convert integer to string
+    char temp[10];
+    uint8_t i = 0;
+
+    do
+    {
+        temp[i++] = '0' + (number % 10U);
+        number /= 10U;
+    }
+    while (number != 0U && i < sizeof(temp));
+
+    size_t pos = 0;
+
+    // Copy digits in correct order
+    while (i > 0U && pos < buflen - 1U)
+        buf[pos++] = temp[--i];
+
+    // Add decimal point
+    if (decimal && pos < buflen - 1U)
+    {
+        buf[pos++] = '.';
+
+        if (pos < buflen - 1U)
+            buf[pos++] = '0' + decimalDigit;
+    }
+
+    // Add suffix
+    while (*suffix != '\0' && pos < buflen - 1U)
+        buf[pos++] = *suffix++;
+
+    buf[pos] = '\0';
+}
+
+void dispCycleRunningScreenUpdate(void)
+{
+    static uint32_t lastElapsedTicks = UINT32_MAX;
+    static uint32_t lastCycles = UINT32_MAX;
+
+    static const struct
+    {
+        uint32_t threshold;
+        uint32_t divisor;
+        uint32_t fractionDivisor;
+    } timeUnits[] =
+    {
+        {864000U, 864000U, 86400U},  // Days
+        {36000U,   36000U,  3600U},  // Hours
+        {600U,       600U,    60U},  // Minutes
+        {0U,          10U,     1U}   // Seconds
+    };
+
+    char fullStrTime[20];
+    char fullStrCycles[20];
+
+    uint32_t elapsedTicks = dispenseElapsedTicks;
+    uint32_t cycles = (CycleElapsed >= 0)
+                    ? (uint32_t)CycleElapsed : 0U;
+
+    // Avoid unnecessary display updates
+    if (elapsedTicks == lastElapsedTicks &&
+        cycles == lastCycles)
+    {
+        return;
+    }
+
+    lastElapsedTicks = elapsedTicks;
+    lastCycles = cycles;
+
+    // Select time unit
+    uint8_t i = 0;
+
+    while (i < 3U &&
+           elapsedTicks < timeUnits[i].threshold)
+    {
+        i++;
+    }
+
+    // Convert elapsed ticks into tenths of selected unit
+    uint32_t value =
+        (elapsedTicks / timeUnits[i].divisor) * 10U +
+        (elapsedTicks % timeUnits[i].divisor) /
+         timeUnits[i].fractionDivisor;
+
+    timeElapsedTenths = elapsedTicks;
+
+    // TIME formatting tag
+    ValtoStr(0x80000000UL | value,
+             fullStrTime,
+             sizeof(fullStrTime));
+
+    // INTEGER formatting tag
+    ValtoStr(0x40000000UL | cycles,
+             fullStrCycles,
+             sizeof(fullStrCycles));
+
+    // Update display
+    u8g2_SetDrawColor(&u8g2, 0);
+    u8g2_DrawBox(&u8g2, 65, 25, 59, 37);
+
+    u8g2_SetDrawColor(&u8g2, 1);
+    u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
+
+    u8g2_DrawStr(&u8g2,
+        122 - u8g2_GetStrWidth(&u8g2, fullStrTime),
+        42,
+        fullStrTime);
+
+    u8g2_DrawStr(&u8g2,
+        122 - u8g2_GetStrWidth(&u8g2, fullStrCycles),
+        55,
+        fullStrCycles);
+}

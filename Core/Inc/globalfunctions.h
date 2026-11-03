@@ -20,7 +20,7 @@ void dispCycleRunningScreenUpdate();
 
 
 //helper functions 
- void ValtoStr(uint16_t val, char *buf, size_t buflen);
+ void ValtoStr(uint32_t val, char *buf, size_t buflen);
 void Buzzer_Beep();
 void rpmUpdateButtonsHandle();
 

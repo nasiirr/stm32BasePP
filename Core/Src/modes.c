@@ -12,7 +12,7 @@ uint8_t modeCounter = 0 ;
 bool changeMenu = false;
 bool displayDirty = true;
 const char* modesarr[] = {
-  "TIME ", "INT", "EXTV", "EXTI", "LEV1", "LEV2",
+  "TIME ", "SPEED", "EXTV", "EXTI", "LEV1", "LEV2",
 };
 
 void dispModeHandle(){
@@ -66,7 +66,7 @@ void modeButtonHandle(){
 
     u8g2_ClearBuffer(&u8g2);
 
-    if (modeCounter>5){
+    if (modeCounter>2){
       modeCounter = 0;
     }
     if(modeCounter==0){
@@ -178,7 +178,7 @@ void handleDB15StartStop(uint16_t rpmToUse) {
 void handleExtV() {
 int adcval = 400;
 rpmext = (int)(((long)adcval * MAX_RPM10) / 4095L);
-printf("ADC:%d,RPM:%d\n", adcval, rpmext);
+// printf("ADC:%d,RPM:%d\n", adcval, rpmext);
   if (lastExtRpm != rpmext) {
     lastExtRpm = rpmext;
 

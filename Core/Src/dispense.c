@@ -294,7 +294,8 @@ void drawMenuRow(const char* title, MenuItem* item, int y, bool selected, bool e
       ValtoStr(value, buf, sizeof(buf));
     } else {
       uint16_t value = *(uint16_t*)item->value;
-      snprintf(buf, sizeof(buf), "%u", (unsigned)value);
+      // snprintf(buf, sizeof(buf), "%u", (unsigned)value);
+      ValtoStr(value, buf, sizeof(buf));
     }
   }
 

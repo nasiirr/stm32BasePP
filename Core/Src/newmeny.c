@@ -122,13 +122,13 @@ typedef struct { const char *name, *title; const Item *items; uint8_t count; } C
 
 #define NUM(n, v, lo, hi)  { n, &(v), lo, hi, NULL, NULL }
 #define CHOICE(n, v, l)    { n, &(v), 0, LEN(l) - 1, l, NULL }
-#define INFO(n , l)            { n, NULL, 0, 0, l, NULL }
+#define INFO(n , l)            { n, NULL, 0, LEN(l) - 1, l, NULL }
 #define ACTION(n, f)       { n, NULL, 0, 0, NULL, f }
 
 /* index 1 = "on" for every bool-like list, so the value IS the bool */
 static const char *const L_TONE[]   = {"DISABLE", "ENABLE"};
-static const char *const L_CONTR[]  = {"DARK", "LIGHT"};
-static const char *const L_LANG[]   = {"ENGLISH", "HINDI"};
+// static const char *const L_CONTR[]  = {"DARK", "LIGHT"};
+// static const char *const L_LANG[]   = {"ENGLISH", "HINDI"};
 static const char *const L_YESNO[]  = {"NO", "YES"};
 static const char *const L_WIFI[]   = {"DISABLED", "ENABLE"};
 static const char *const L_STOP[]   = {"1", "2"};
@@ -142,9 +142,9 @@ static const char *const L_SOFTWARE[] = {"BOOT V3.1.0" , "USER v3.2.3"};
 
 
 static const Item generalItems[] = {
-  NUM   ("TIMESET",    cfg.timeSet,  0, 999),
-  CHOICE("LANGUAGE",   cfg.language, L_LANG),
-  CHOICE("CONTRAST",   cfg.contrast, L_CONTR),
+  // NUM   ("TIMESET",    cfg.timeSet,  0, 999),
+  // CHOICE("LANGUAGE",   cfg.language, L_LANG),
+  // CHOICE("CONTRAST",   cfg.contrast, L_CONTR),
   CHOICE("TONE SET",   cfg.tone,     L_TONE),
 };
 static const Item functionalItems[] = {
@@ -160,7 +160,7 @@ static const Item systemItems[] = {
   CHOICE("PARITY",      cfg.parity,   L_PARITY),
   // INFO  ("PLS TRIG"),
   CHOICE("LVL TRIG",    cfg.levelTrig, L_LEVEL),
-  NUM   ("DISP STOP",   cfg.dispStop, 0, 10),
+  // NUM   ("DISP STOP",   cfg.dispStop, 0, 10),
   NUM   ("ACC TIME",    cfg.accTime,  0, 999),
   NUM   ("DEC TIME",    cfg.decTime,  0, 999),
   ACTION("PARAM RESET", paramReset),
@@ -185,8 +185,9 @@ static const Category cats[] = {
 /* ================= state + key handling (no drawing here) ================= */
 typedef enum { K_UP, K_DOWN, K_SEL, K_BACK } Key;
 static int  cat, item, first;
-static bool inItems, editing;
-
+static bool inItems, editing , confirming ;
+static bool confirmVal;            /* 0 = NO, 1 = YES */
+static uint16_t backup;            /* must hold full-range values */
 static int wrap(int v, int n) { return (v % n + n) % n; }
 
 static void clampWindow(int sel)
@@ -199,17 +200,25 @@ static void menu2Key(Key k)
 {
   const Category *c = &cats[cat];
   menuUpdate = true;
-
-  if (editing) {
+  if (confirming) {
+if (k == K_UP || k == K_DOWN) confirmVal = !confirmVal;   
+ else {
+      if (k == K_SEL && confirmVal) c->items[item].fn();   /* YES -> run */
+      confirming = false;                                  /* YES or NO -> exit */
+    }
+  }
+    else if (editing) {
     const Item *it = &c->items[item];
-    if (k == K_UP || k == K_DOWN) {
+    if ((k == K_UP || k == K_DOWN) && it->val) {
       int d = (k == K_UP) ? -1 : 1;
       if (it->labels) *it->val = wrap(*it->val + d, it->max + 1);
       else            *it->val = constrainInt32(*it->val + d, it->min, it->max);
-      menu2Apply();
-      needsSave = true;
     } else {
-      editing = false;                              /* SEL or BACK */
+      if (it->val) {
+        if (k == K_BACK) *it->val = backup;             /* cancel */
+        else { menu2Apply(); needsSave = true; }        /* SEL = commit */
+      }
+      editing = false;
     }
   }
   else if (inItems) {
@@ -217,8 +226,8 @@ static void menu2Key(Key k)
     else if (k == K_DOWN) { item = wrap(item + 1, c->count); clampWindow(item); }
     else if (k == K_SEL) {
       const Item *it = &c->items[item];
-      if (it->val)     editing = true;
-      else if (it->fn) it->fn();
+             if (it->val || it->labels) { editing = true; if (it->val) backup = *it->val; }
+      else if (it->fn)         { confirming = true; confirmVal = 0; }  /* default NO */
     }
     else                  { inItems = false; first = 0; }   /* BACK */
   }
@@ -252,34 +261,35 @@ static void drawScrollbar(int n, int sel)
 void menu2Draw(void)
 {
   const Category *c = &cats[cat];
-  const Item *it = editing ? &c->items[item] : NULL;
+  const Item *it = (editing || confirming) ? &c->items[item] : NULL;
   char buf[12];
 
   u8g2_ClearBuffer(&u8g2);
   u8g2_SetFont(&u8g2, u8g2_font_profont11_tr);
 
   /* title pill */
-  const char *title = editing ? it->name : (inItems ? c->title : "MENU");
+  const char *title = (editing || confirming) ? it->name : (inItems ? c->title : "MENU");
   u8g2_DrawRBox(&u8g2, 2, 27, u8g2_GetStrWidth(&u8g2, title) + 4, 13, 4);
   u8g2_SetDrawColor(&u8g2, 0);
   u8g2_DrawStr(&u8g2, 4, 37, title);
   u8g2_SetDrawColor(&u8g2, 1);
 
-  if (editing) {
-    if (it->labels) {
-      int optionCount = it->max + 1;
+    if (editing || confirming) {
+    if (confirming || it->labels) {
+      const char *const *lab = confirming ? L_YESNO : it->labels;
+      int optionCount = confirming ? 2 : it->max + 1;
+      int cur = confirming ? confirmVal : (it->val ? *it->val : -1);   /* -1 = no frame */
 
       for (int i = 0; i < optionCount && i < VISIBLE; i++) {
-        const char *s = it->labels[i];
+        const char *s = lab[i];
         int w = u8g2_GetStrWidth(&u8g2, s);
         int x = RIGHT_X - w, y = rowY(optionCount, i);
 
-        if (i == *it->val) u8g2_DrawRFrame(&u8g2, x - 2, y - 10, w + 4, 13, 2);
+        if (i == cur) u8g2_DrawRFrame(&u8g2, x - 2, y - 10, w + 4, 13, 2);
         u8g2_DrawStr(&u8g2, x, y, s);
       }
-    } else {
-      ValtoStr(*it->val , buf , sizeof buf);
-      // snprintf(buf, sizeof buf, "%u", *it->val);
+    } else {                                        /* NUM editor */
+      ValtoStr(*it->val, buf, sizeof buf);
       u8g2_DrawStr(&u8g2, RIGHT_X - u8g2_GetStrWidth(&u8g2, buf), 37, buf);
     }
   } else {                                          /* list on the right */
